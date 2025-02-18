@@ -6,7 +6,7 @@
 
 ## 🎯 Finalidad del proyecto
 
-Sistema de monitoreo inteligente basado en aprendizaje automático para analizar y mejorar la postura y el ejercicio en adultos mayores en proceso de rehabilitación.
+**Sistema de monitoreo inteligente basado en aprendizaje automático para analizar y mejorar la postura y el ejercicio en adultos mayores en proceso de rehabilitación.**
 
 ## 🟢 Funcionalidades del proyecto
 
@@ -16,3 +16,8 @@ Sistema de monitoreo inteligente basado en aprendizaje automático para analizar
 - **Implementar un sistema de retroalimentación inteligente.**
 - **Evaluar la efectividad del sistema en la rehabilitación.**
 - **Asegurar la usabilidad y seguridad del sistema**
+
+## ✅ Tecnologías utilizadas
+
+- Python
+- Inteligencia Artificial de Aprendizaje Automático
