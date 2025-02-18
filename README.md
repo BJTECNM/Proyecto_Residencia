@@ -17,7 +17,7 @@
 - **Evaluar la efectividad del sistema en la rehabilitación.**
 - **Asegurar la usabilidad y seguridad del sistema**
 
-## ✅ Tecnologías utilizadas
+## 🖥️ Tecnologías utilizadas
 
 - Python
 - Inteligencia Artificial de Aprendizaje Automático
