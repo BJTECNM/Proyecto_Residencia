@@ -4,11 +4,11 @@
 <img src="https://img.shields.io/badge/STATUS-EN%20DESAROLLO-green">
 </p>
 
-## Finalidad del proyecto
+## 🎯 Finalidad del proyecto
 
 Sistema de monitoreo inteligente basado en aprendizaje automático para analizar y mejorar la postura y el ejercicio en adultos mayores en proceso de rehabilitación.
 
-## 🎯 Funcionalidades del proyecto
+## 🔴 Funcionalidades del proyecto
 
 - **Diseñar e implementar un modelo de aprendizaje automático que analice la postura y el movimiento de adultos mayores en rehabilitación.**
 - **Optimizar algoritmos de detección de posturas y movimientos incorrectos.**
