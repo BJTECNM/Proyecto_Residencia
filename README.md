@@ -1,4 +1,4 @@
-<h1 style="color: yellow; font-style: italic; text-align: center;">Proyecto: Monitoreo Inteligente De Ejercicio Y Postura Para Adultos Mayores Utilizando Aprendizaje Automático.</h1>
+# **Proyecto: Monitoreo Inteligente de Ejercicio y Postura para Adultos Mayores Utilizando Aprendizaje Automático**
 
 <p align="center">
 <img src="https://img.shields.io/badge/STATUS-EN%20DESAROLLO-green">
