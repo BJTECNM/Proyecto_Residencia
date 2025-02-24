@@ -6,28 +6,34 @@ mp_drawing = mp.solutions.drawing_utils
 mp_pose = mp.solutions.pose
 pose = mp_pose.Pose()
 
-cap = cv2.VideoCapture(0)
 
-while cap.isOpened():
-    ret, frame = cap.read()
+def start_detection():
+    cap = cv2.VideoCapture(0)
 
-    if not ret:
-        print("No se pudo capturar la imagen")
-        break
+    while cap.isOpened():
+        ret, frame = cap.read()
 
-    # Convertir la imagen a RGB
-    image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    results = pose.process(image_rgb)
+        if not ret:
+            print("No se pudo capturar la imagen")
+            break
 
-    if results.pose_landmarks:
-        mp_drawing.draw_landmarks(
-            frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
+        # Convertir la imagen a RGB
+        image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        results = pose.process(image_rgb)
 
-    # Mostrar el frame con las marcas de la postura
-    cv2.imshow('Mediapipe Pose Detection', frame)
+        if results.pose_landmarks:
+            mp_drawing.draw_landmarks(
+                frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
 
-    if cv2.waitKey(10) & 0xFF == ord('q'):
-        break
+        # Mostrar el frame con las marcas de la postura
+        cv2.imshow('Mediapipe Pose Detection', frame)
 
-cap.release()
-cv2.destroyAllWindows()
+        if cv2.waitKey(10) & 0xFF == ord('q'):
+            break
+
+    cap.release()
+    cv2.destroyAllWindows()
+
+
+def stop_detection():
+    pass  # Aquí puedes agregar la lógica para detener la aplicación
