@@ -1,4 +1,4 @@
-<h1 align="center">Proyecto: Monitoreo Inteligente De Ejercicio Y Postura Para Adultos Mayores Utilizando Aprendizaje Automático.</h1>
+<h1 style="color: yellow; font-style: italic; text-align: center;">Proyecto: Monitoreo Inteligente De Ejercicio Y Postura Para Adultos Mayores Utilizando Aprendizaje Automático.</h1>
 
 <p align="center">
 <img src="https://img.shields.io/badge/STATUS-EN%20DESAROLLO-green">
@@ -21,3 +21,5 @@
 
 - Python
 - Inteligencia Artificial de Aprendizaje Automático
+- OpenCV
+- MediaPipe

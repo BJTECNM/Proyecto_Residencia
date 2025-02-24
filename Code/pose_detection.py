@@ -10,7 +10,7 @@ cap = cv2.VideoCapture(0)
 
 while cap.isOpened():
     ret, frame = cap.read()
-    
+
     if not ret:
         print("No se pudo capturar la imagen")
         break
@@ -20,7 +20,8 @@ while cap.isOpened():
     results = pose.process(image_rgb)
 
     if results.pose_landmarks:
-        mp_drawing.draw_landmarks(frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
+        mp_drawing.draw_landmarks(
+            frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
 
     # Mostrar el frame con las marcas de la postura
     cv2.imshow('Mediapipe Pose Detection', frame)
