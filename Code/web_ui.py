@@ -1,77 +1,188 @@
-from flask import Flask, render_template_string
+from flask import Flask, render_template_string, Response, jsonify
 import cv2
-import mediapipe as mp
+import threading
 
 app = Flask(__name__)
 
-# Plantilla HTML dinámica para mostrar la cámara en tiempo real
-HTML_TEMPLATE_VIDEO = '''
-<!DOCTYPE html>
-<html>
-<head><title>Transmisión de Cámara con Flask</title></head>
+# Variables globales con bloqueo de hilos
+video_capture = None
+stream_active = False
+lock = threading.Lock()
+
+HTML_TEMPLATE = """
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Transmisión Webcam</title>
+    <style>
+        body { font-family: Arial; text-align: center; padding-top: 50px; }
+        #video-feed {
+            width: 640px;
+            max-width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
 <body>
-    <h1>Cámara Web Procesada por MediaPipe</h1>
-    <!-- Imagen que apunta al endpoint /video -->
-    <img src="/video" style="width: 100%;" />
+    <h1>Transmisión en Vivo con Flask</h1>
+    <!-- Botones de control -->
+    <button id="startBtn" onclick="startStream()" {% if stream_active %}disabled{% endif %}>Iniciar</button>
+    <button id="stopBtn" onclick="stopStream()" disabled>Detener</button>
+
+    <br><br>
+    <img id="video-feed" src="" alt="Video feed">
+
+    <script>
+        let isStreaming = false;
+
+        // Inicia transmisión
+        function startStream() {
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+
+            fetch('/start', {method: 'POST'})
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Actualiza la imagen para mostrar el stream
+                        document.getElementById('video-feed').src = 
+                            `/video?${new Date().getTime()}`;
+                        isStreaming = true;
+                    } else {
+                        alert(`Error: ${data.error}`);
+                        document.getElementById('startBtn').disabled = false;
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert('Error en el servidor');
+                    document.getElementById('startBtn').disabled = false;
+                });
+        }
+
+        // Detiene transmisión
+        function stopStream() {
+            if (!isStreaming) return;
+
+            document.getElementById('stopBtn').disabled = true;
+            document.getElementById('startBtn').disabled = false;
+
+            fetch('/stop', {method: 'POST'})
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('video-feed').src = '';
+                        isStreaming = false;
+                    } else {
+                        alert(`Error: ${data.error}`);
+                        document.getElementById('stopBtn').disabled = false;
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert('Error en el servidor');
+                    document.getElementById('stopBtn').disabled = false;
+                });
+        }
+
+        // Estado inicial al cargar la página
+        window.addEventListener('load', () => {
+            fetch('/status')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.active) {
+                        document.getElementById('video-feed').src = `/video?${new Date().getTime()}`;
+                        document.getElementById('startBtn').disabled = true;
+                        document.getElementById('stopBtn').disabled = false;
+                    }
+                });
+        });
+    </script>
 </body>
 </html>
-'''
+"""
 
-# Inicialización de MediaPipe Pose
-mp_drawing = mp.solutions.drawing_utils
-mp_pose = mp.solutions.pose
-pose = mp_pose.Pose()
+# Función para generar el flujo de video
+def generate_frames():
+    with lock:
+        if not stream_active or not video_capture.isOpened():
+            return
 
-# Captura la cámara web
-cap = cv2.VideoCapture(0)
+    while True:
+        success, frame = video_capture.read()
+        if not success:
+            break
+            
+        # Codificar frame a JPEG
+        ret, buffer = cv2.imencode('.jpg', frame)
+        if not ret:
+            continue
+            
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
 
+# Ruta principal
 @app.route('/')
 def index():
-    return render_template_string(HTML_TEMPLATE_VIDEO)
+    return render_template_string(HTML_TEMPLATE, stream_active=stream_active)
 
+# Iniciar transmisión
+@app.route('/start', methods=['POST'])
+def start_stream():
+    global video_capture, stream_active
+    
+    with lock:
+        if not stream_active:
+            try:
+                # Inicializar webcam (0 para cámara integrada)
+                video_capture = cv2.VideoCapture(0)
+                
+                # Verificar si la cámara está funcionando
+                if not video_capture.isOpened():
+                    return jsonify({"success": False, "error": "No se pudo acceder a la cámara."})
+                    
+                stream_active = True
+                return jsonify({"success": True})
+            except Exception as e:
+                return jsonify({"success": False, "error": str(e)})
+    
+    return jsonify({"success": False, "error": "Ya hay una transmisión activa"})
+
+# Detener transmisión
+@app.route('/stop', methods=['POST'])
+def stop_stream():
+    global video_capture, stream_active
+    
+    with lock:
+        if stream_active and video_capture is not None:
+            try:
+                # Liberar recursos de la cámara
+                video_capture.release()
+                video_capture = None
+                stream_active = False
+                return jsonify({"success": True})
+            except Exception as e:
+                return jsonify({"success": False, "error": str(e)})
+    
+    return jsonify({"success": False, "error": "No hay transmisión activa"})
+
+# Flujo de video en tiempo real (MJPEG)
 @app.route('/video')
 def video():
-    def generate_frames():
-        while True:
-            success, frame = cap.read()
-            if not success:
-                break
+    if not stream_active or not video_capture.isOpened():
+        return "Cámara no disponible", 404
+        
+    return Response(generate_frames(),
+                    mimetype='multipart/x-mixed-replace; boundary=frame')
 
-            # Convertir a RGB (requerido por MediaPipe)
-            image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            
-            # Procesar con MediaPipe Pose
-            results = pose.process(image_rgb)
-
-            # Dibujar landmarks si se detecta cuerpo
-            if results.pose_landmarks:
-                mp_drawing.draw_landmarks(
-                    frame, 
-                    results.pose_landmarks, 
-                    mp_pose.POSE_CONNECTIONS,
-                    mp_drawing.DrawingSpec(color=(255, 0, 0), thickness=3, circle_radius=4),
-                    mp_drawing.DrawingSpec(color=(0, 255, 0), thickness=3)
-                )
-
-            # Codificar imagen a formato JPEG
-            ret, buffer = cv2.imencode('.jpg', frame)
-            if not ret:
-                continue
-
-            # Enviar imagen en formato de flujo MJPEG
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
-
-    return app.response_class(
-        generate_frames(),
-        mimetype='multipart/x-mixed-replace; boundary=frame'
-    )
+# Estado actual
+@app.route('/status')
+def status():
+    global stream_active
+    with lock:
+        return jsonify({"active": stream_active})
 
 if __name__ == '__main__':
-    # Limpiar recursos al finalizar
-    import atexit
-    @atexit.register
-    def release_resources():
-        cap.release()
-    
     app.run(debug=True)
