@@ -7,74 +7,18 @@
 </head>
 <body>
     <h1>Transmisión en Vivo con Flask</h1>
+    
     <!-- Botones de control -->
-    <button id="startBtn" onclick="startStream()" {% if stream_active %}disabled{% endif %}>Iniciar</button>
+    <button id="startBtn" onclick="startStream()" 
+        {% if stream_active %}disabled{% endif %}>
+        Iniciar
+    </button>
     <button id="stopBtn" onclick="stopStream()" disabled>Detener</button>
 
     <br><br>
     <img id="video-feed" src="" alt="Video feed">
 
-    <script>
-        let isStreaming = false;
-
-        function startStream() {
-            document.getElementById('startBtn').disabled = true;
-            document.getElementById('stopBtn').disabled = false;
-
-            fetch('/start', {method: 'POST'})
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        document.getElementById('video-feed').src = 
-                            `/video?${new Date().getTime()}`;
-                        isStreaming = true;
-                    } else {
-                        alert(`Error: ${data.error}`);
-                        document.getElementById('startBtn').disabled = false;
-                    }
-                })
-                .catch(err => {
-                    console.error(err);
-                    alert('Error en el servidor');
-                    document.getElementById('startBtn').disabled = false;
-                });
-        }
-
-        function stopStream() {
-            if (!isStreaming) return;
-
-            document.getElementById('stopBtn').disabled = true;
-            document.getElementById('startBtn').disabled = false;
-
-            fetch('/stop', {method: 'POST'})
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        document.getElementById('video-feed').src = '';
-                        isStreaming = false;
-                    } else {
-                        alert(`Error: ${data.error}`);
-                        document.getElementById('stopBtn').disabled = false;
-                    }
-                })
-                .catch(err => {
-                    console.error(err);
-                    alert('Error en el servidor');
-                    document.getElementById('stopBtn').disabled = false;
-                });
-        }
-
-        window.addEventListener('load', () => {
-            fetch('/status')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.active) {
-                        document.getElementById('video-feed').src = `/video?${new Date().getTime()}`;
-                        document.getElementById('startBtn').disabled = true;
-                        document.getElementById('stopBtn').disabled = false;
-                    }
-                });
-        });
-    </script>
+    <!-- Cargar script externo -->
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
