@@ -1,24 +1,34 @@
 <!doctype html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
-    <title>Transmisión Webcam</title>
+    <title>Monitoreo Inteligente de Ejercicio y Postura</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
+
 <body>
-    <h1>Transmisión en Vivo con Flask</h1>
-    
-    <!-- Botones de control -->
-    <button id="startBtn" onclick="startStream()" 
-        {% if stream_active %}disabled{% endif %}>
-        Iniciar
-    </button>
-    <button id="stopBtn" onclick="stopStream()" disabled>Detener</button>
+    <!-- Título centrado -->
+    <header class="app-title">Monitoreo Inteligente de Ejercicio y Postura</header>
 
-    <br><br>
-    <img id="video-feed" src="" alt="Video feed">
+    <div class="layout-container">
+        <!-- Columna izquierda: botones -->
+        <aside class="sidebar-left">
+            <button id="startBtn" onclick="startStream()" {% if stream_active %}disabled{% endif %}>
+                Iniciar
+            </button>
+            <br><br>
+            <button id="stopBtn" onclick="stopStream()" disabled>Detener</button>
+        </aside>
 
-    <!-- Cargar script externo -->
+        <!-- Columna derecha: video -->
+        <main class="video-area">
+            <img id="video-feed" src="{{ url_for('static', filename='placeholder.jpg') }}" alt="Captura de Video"
+                onerror="this.src='{{ url_for('static', filename='placeholder.jpg') }}'">
+        </main>
+    </div>
+
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
+
 </html>

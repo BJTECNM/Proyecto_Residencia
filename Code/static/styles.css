@@ -1,12 +1,102 @@
+:root {
+    /* Variables globales personalizables */
+    --color-fondo: #f4f4f4;
+    --color-principal: #007BFF;
+    --color-texto: #333;
+    --fuente-principal: 'Segoe UI', sans-serif;
+    --espacio-general: 2rem;
+    --ancho-sidebar-izquierda: 15%;
+    --tamano-boton: 40px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
 body {
-    font-family: Arial;
+    background-color: var(--color-fondo);
+    font-family: var(--fuente-principal);
+    color: var(--color-texto);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* Título fijo y centrado */
+.app-title {
+    position: fixed;
+    width: 100%;
+    padding: calc(var(--espacio-general) * 0.5) var(--espacio-general);
+    background-color: rgba(255, 255, 255, 0.9);
+    font-size: 1.8rem;
     text-align: center;
-    padding-top: 50px;
+    z-index: 10;
+}
+
+/* Contenedor principal con diseño de dos columnas */
+.layout-container {
+    display: flex;
+    flex-direction: row;
+    height: calc(100vh - 64px);
+    margin-top: 64px; /* Altura del header */
+}
+
+.sidebar-left {
+    width: var(--ancho-sidebar-izquierda);
+    padding: var(--espacio-general);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.video-area {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--espacio-general);
 }
 
 #video-feed {
-    width: 640px;
-    max-width: 100%;
+    width: 90%;
+    max-width: 640px;
+    height: auto;
     border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+    object-fit: contain;
+}
+
+/* Botones responsivos */
+button {
+    padding: var(--tamano-boton) calc(var(--tamano-boton) * 0.6);
+    font-size: 1rem;
+    background-color: var(--color-principal);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+/* Responsive para móviles */
+@media (max-width: 768px) {
+    .layout-container {
+        flex-direction: column;
+    }
+
+    .sidebar-left {
+        width: 100%;
+        text-align: center;
+    }
+
+    .video-area {
+        margin-top: 2rem;
+    }
 }
