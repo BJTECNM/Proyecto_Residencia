@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <title>Monitoreo Inteligente de Ejercicio y Postura</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}" />
 </head>
 
 <body>
@@ -24,7 +25,7 @@
         <!-- Columna derecha: video -->
         <main class="video-area">
             <img id="video-feed" src="{{ url_for('static', filename='placeholder.jpg') }}" alt="Captura de Video"
-                onerror="this.src='{{ url_for('static', filename='placeholder.jpg') }}'">
+                onerror="this.src='{{ url_for('static', filename='placeholder.png') }}'">
         </main>
     </div>
 
