@@ -1,7 +1,7 @@
 from flask import Flask, render_template, Response, jsonify
 import cv2
 import threading
-from pose_detection import detect_pose  # Importar función de detección
+from pose_detection import detect_pose
 
 app = Flask(__name__)
 
@@ -22,22 +22,17 @@ def start_stream():
 
     with lock:
         if not stream_active:
-            try:
-                # Inicializar webcam con resolución optimizada
-                video_capture = cv2.VideoCapture(0)
+            video_capture = cv2.VideoCapture(0)
+            video_capture.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+            video_capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
-                # Configurar resolución para reducir procesamiento
-                video_capture.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-                video_capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+            if not video_capture.isOpened():
+                return jsonify({"success": False, "error": "No se pudo acceder a la cámara."})
 
-                if not video_capture.isOpened():
-                    return jsonify({"success": False, "error": "No se pudo acceder a la cámara."})
-
-                stream_active = True
-                return jsonify({"success": True})
-            except Exception as e:
-                return jsonify({"success": False, "error": str(e)})
-    return jsonify({"success": False, "error": "Ya hay una transmisión activa"})
+            stream_active = True
+            return jsonify({"success": True})
+        else:
+            return jsonify({"success": False, "error": "Ya hay una transmisión activa"})
 
 
 @app.route('/stop', methods=['POST'])
@@ -45,37 +40,33 @@ def stop_stream():
     global video_capture, stream_active
 
     with lock:
-        if stream_active and video_capture is not None:
-            try:
+        if stream_active:
+            if video_capture:
                 video_capture.release()
                 video_capture = None
-                stream_active = False
-                return jsonify({"success": True})
-            except Exception as e:
-                return jsonify({"success": False, "error": str(e)})
-    return jsonify({"success": False, "error": "No hay transmisión activa"})
+            stream_active = False
+            return jsonify({"success": True})
+        else:
+            return jsonify({"success": False, "error": "No hay transmisión activa"})
 
 
 @app.route('/video')
 def video():
-    if not stream_active or (video_capture is not None and not video_capture.isOpened()):
-        return "", 204
-
     def generate_frames():
-        with lock:
-            if not stream_active:
-                return
+        global video_capture
 
         while True:
-            ret, frame = video_capture.read()
+            with lock:
+                if not stream_active or video_capture is None:
+                    break
+
+                ret, frame = video_capture.read()
+
             if not ret:
                 break
 
-            # Detectar y procesar postura
-            processed_frame = detect_pose(frame)
-
-            # Comprimir imagen con calidad optimizada para reducir uso de CPU
-            ret, buffer = cv2.imencode('.jpg', processed_frame, [
+            proccessed_frame = detect_pose(frame)
+            ret, buffer = cv2.imencode('.jpg', proccessed_frame, [
                                        int(cv2.IMWRITE_JPEG_QUALITY), 85])
             if not ret:
                 continue
