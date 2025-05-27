@@ -1,4 +1,4 @@
-from flask import Flask, render_template, Response, jsonify
+from flask import Flask, render_template, Response, jsonify, request
 import cv2
 import threading
 from pose_detection import detect_pose
@@ -20,9 +20,12 @@ def index():
 def start_stream():
     global video_capture, stream_active
 
+    data = request.get_json()
+    camera_index = data.get('camara_index', 0)
+
     with lock:
         if not stream_active:
-            video_capture = cv2.VideoCapture(0)
+            video_capture = cv2.VideoCapture(camera_index)
             video_capture.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
             video_capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 

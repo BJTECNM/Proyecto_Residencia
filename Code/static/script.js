@@ -1,12 +1,31 @@
 let isStreaming = false;
 
+async function populateCameras() {
+    const cameraSelect = document.getElementById('cameraSelect');
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const videoDevices = devices.filter(device => device.kind === 'videoinput');
+
+    cameraSelect.innerHTML = '';
+    videoDevices.forEach((device, index) => {
+        const option = document.createElement('option');
+        option.value = index;
+        option.text = device.label || `Cámara ${index + 1}`;
+        cameraSelect.appendChild(option);
+    });
+}
+
 function startStream() {
+    const cameraIndex = document.getElementById('cameraSelect').value;
     const startBtn = document.getElementById('startBtn');
     const stopBtn = document.getElementById('stopBtn');
 
     if (isStreaming) return;
 
-    fetch('/start', { method: 'POST' })
+    fetch('/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ camera_index: parseInt(cameraIndex) })
+    })
         .then(res => res.json())
         .then(data => {
             if (data.success) {
@@ -43,12 +62,12 @@ function stopStream() {
         })
         .catch(() => {
             alert('No se pudo detener la transmisión');
-            stopBtn.disabled = true;
-            startBtn.disabled = false;
         });
 }
 
-window.addEventListener('load', () => {
+window.addEventListener('load', async () => {
+    await populateCameras();
+
     fetch('/status')
         .then(res => res.json())
         .then(data => {
