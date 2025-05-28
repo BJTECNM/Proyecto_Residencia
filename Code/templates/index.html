@@ -9,8 +9,12 @@
 </head>
 
 <body>
-    <!-- Título centrado -->
-    <header class="app-title">Monitoreo Inteligente de Ejercicio y Postura</header>
+    <header class="app-header">
+        <h1 class="app-title">Monitoreo Inteligente de Ejercicio y Postura</h1>
+        <button class="theme-toggle" onclick="toggleTheme()" id="themeButton">
+            <span class="icon" id="themeIcon">🌙</span> Cambiar tema
+        </button>
+    </header>
 
     <div class="layout-container">
         <!-- Columna izquierda: botones -->
@@ -31,8 +35,8 @@
 
         <!-- Columna derecha: video -->
         <main class="video-area">
-            <img id="video-feed" src="{{ url_for('static', filename='placeholder.jpg') }}" alt="Captura de Video"
-                onerror="this.src='{{ url_for('static', filename='placeholder.png') }}'">
+            <img id="video-feed" class="fade" src="{{ url_for('static', filename='placeholder.jpg') }}"
+                alt="Captura de Video" onerror="this.src='{{ url_for('static', filename='placeholder.png') }}'">
         </main>
     </div>
 

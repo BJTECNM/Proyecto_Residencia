@@ -15,30 +15,41 @@ async function populateCameras() {
 }
 
 function startStream() {
-    const cameraIndex = document.getElementById('cameraSelect').value;
     const startBtn = document.getElementById('startBtn');
     const stopBtn = document.getElementById('stopBtn');
+    const img = document.getElementById('video-feed');
 
     if (isStreaming) return;
 
+    const cameraIndex = document.getElementById('cameraSelect').value;
+
     fetch('/start', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ camera_index: parseInt(cameraIndex) })
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ camara_index: parseInt(cameraIndex) })
     })
-        .then(res => res.json())
+        .then(response => response.json())
         .then(data => {
             if (data.success) {
-                document.getElementById('video-feed').src = `/video?${Date.now()}`;
+                img.classList.add('fade-out');
+                setTimeout(() => {
+                    img.src = `/video?${new Date().getTime()}`;
+                    img.classList.remove('fade-out');
+                }, 300);
+
                 isStreaming = true;
                 startBtn.disabled = true;
                 stopBtn.disabled = false;
             } else {
                 alert(`Error: ${data.error}`);
+                startBtn.disabled = false;
             }
         })
         .catch(() => {
             alert('No se pudo iniciar la transmisión');
+            startBtn.disabled = false;
         });
 }
 
@@ -47,13 +58,28 @@ function stopStream() {
 
     const startBtn = document.getElementById('startBtn');
     const stopBtn = document.getElementById('stopBtn');
+    const img = document.getElementById('video-feed');
 
-    fetch('/stop', { method: 'POST' })
-        .then(res => res.json())
+    fetch('/stop', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({})
+    })
+        .then(response => response.json())
         .then(data => {
             if (data.success) {
                 isStreaming = false;
-                document.getElementById('video-feed').src = `/static/placeholder.jpg?t=${Date.now()}`;
+
+                // Fade out antes de mostrar el placeholder
+                img.classList.add('fade-out');
+
+                setTimeout(() => {
+                    img.src = "/static/placeholder.jpg?t=" + new Date().getTime();
+                    img.classList.remove('fade-out');
+                }, 300);
+
                 stopBtn.disabled = true;
                 startBtn.disabled = false;
             } else {
@@ -62,6 +88,7 @@ function stopStream() {
         })
         .catch(() => {
             alert('No se pudo detener la transmisión');
+            stopBtn.disabled = false;
         });
 }
 
@@ -78,4 +105,32 @@ window.addEventListener('load', async () => {
                 document.getElementById('stopBtn').disabled = false;
             }
         });
+});
+
+function toggleTheme() {
+    const html = document.documentElement;
+    const currentTheme = html.getAttribute('data-theme');
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    const themeButton = document.getElementById('themeButton');
+    const themeIcon = document.getElementById('themeIcon');
+
+    // Animación de rotación
+    themeButton.classList.add('animating');
+
+    // Cambiar ícono con un ligero retraso para que coincida con la animación
+    setTimeout(() => {
+        themeIcon.textContent = newTheme === 'dark' ? '🌙' : '☀️';
+        themeButton.classList.remove('animating');
+    }, 300);
+
+    // Aplicar tema
+    html.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+}
+
+// Aplicar el tema guardado al cargar
+window.addEventListener('DOMContentLoaded', () => {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    document.getElementById('themeIcon').textContent = savedTheme === 'dark' ? '🌙' : '☀️';
 });
