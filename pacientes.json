@@ -1,0 +1,14 @@
+[
+    {
+        "nombre": "Jorge",
+        "apellido": "Salazar",
+        "edad": "45",
+        "complexion": "Robusto"
+    },
+    {
+        "nombre": "Jorge",
+        "apellido": "Figueroa",
+        "edad": "52",
+        "complexion": "Normal"
+    }
+]

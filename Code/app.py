@@ -7,13 +7,11 @@ from pose_detection import detect_pose
 
 app = Flask(__name__)
 
-# Variables globales
 video_capture = None
 stream_active = False
 lock = threading.Lock()
 
 
-# Ruta inicial
 @app.route('/')
 def home():
     return redirect(url_for('registro_paciente'))
@@ -21,8 +19,7 @@ def home():
 
 @app.route('/registro_paciente')
 def registro_paciente():
-    pacientes = cargar_pacientes()
-    return render_template('paciente.html', pacientes=pacientes)
+    return render_template('paciente.html')
 
 
 @app.route('/guardar_paciente', methods=['POST'])
@@ -41,28 +38,12 @@ def guardar_paciente():
     return redirect(url_for('pantalla_captura', nombre=datos['nombre'], apellido=datos['apellido'], edad=datos['edad']))
 
 
-@app.route('/seleccionar_paciente', methods=['POST'])
-def seleccionar_paciente():
-    nombre = request.form.get('nombre_busqueda')
-    pacientes = cargar_pacientes()
-    for paciente in pacientes:
-        if nombre.lower() in paciente['nombre'].lower():
-            return redirect(url_for('pantalla_captura', nombre=paciente['nombre'], apellido=paciente['apellido'], edad=paciente['edad']))
-    return redirect(url_for('registro_paciente'))
-
-
-@app.route('/pacientes')
-def lista_pacientes():
-    pacientes = cargar_pacientes()
-    return render_template('lista_pacientes.html', pacientes=pacientes)
-
-
 @app.route('/editar/<int:idx>')
 def editar_paciente(idx):
     pacientes = cargar_pacientes()
     if idx < len(pacientes):
         return render_template('editar_paciente.html', idx=idx, paciente=pacientes[idx])
-    return redirect(url_for('lista_pacientes'))
+    return redirect(url_for('registro_paciente'))
 
 
 @app.route('/actualizar/<int:idx>', methods=['POST'])
@@ -76,7 +57,7 @@ def actualizar_paciente(idx):
             "complexion": request.form['complexion']
         }
         guardar_todos_pacientes(pacientes)
-    return redirect(url_for('lista_pacientes'))
+    return redirect(url_for('registro_paciente'))
 
 
 @app.route('/eliminar/<int:idx>')
@@ -85,7 +66,28 @@ def eliminar_paciente(idx):
     if idx < len(pacientes):
         pacientes.pop(idx)
         guardar_todos_pacientes(pacientes)
-    return redirect(url_for('lista_pacientes'))
+    return redirect(url_for('registro_paciente'))
+
+
+@app.route('/buscar_pacientes')
+def buscar_pacientes():
+    termino = request.args.get('termino', '').strip().lower()
+    pacientes = cargar_pacientes()
+    coincidencias = []
+
+    for idx, paciente in enumerate(pacientes):
+        nombre = paciente.get('nombre', '').lower()
+        apellido = paciente.get('apellido', '').lower()
+        if termino in nombre or termino in apellido or termino in f"{nombre} {apellido}" or termino in f"{apellido} {nombre}":
+            coincidencias.append({
+                "index": idx,
+                "nombre": paciente['nombre'],
+                "apellido": paciente['apellido'],
+                "edad": paciente['edad'],
+                "complexion": paciente['complexion']
+            })
+
+    return jsonify({"pacientes": coincidencias})
 
 
 @app.route('/captura')
@@ -168,7 +170,7 @@ def status():
         return jsonify({"active": stream_active})
 
 
-# Utilidades
+# === Funciones auxiliares ===
 def cargar_pacientes():
     if os.path.exists('pacientes.json'):
         with open('pacientes.json', 'r', encoding='utf-8') as f:

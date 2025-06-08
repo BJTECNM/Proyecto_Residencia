@@ -1,20 +1,21 @@
 {% extends 'base.html' %}
 {% block title %}Registro de Paciente{% endblock %}
 {% block header %}Buscar o Registrar Paciente{% endblock %}
+
 {% block content %}
-<div style="max-width: 500px; margin: 2rem auto; text-align: center;">
+<div style="max-width: 900px; margin: 2rem auto; text-align: center;">
+    <!-- Campo de búsqueda -->
+    <label for="nombre_busqueda">Buscar paciente:</label><br>
+    <input type="text" id="nombre_busqueda" placeholder="Nombre o apellido"
+        style="width: 300px; margin-top: 0.5rem;"><br><br>
 
-    <!-- Buscar paciente -->
-    <form action="/seleccionar_paciente" method="post" style="margin-bottom: 3rem;">
-        <label for="nombre_busqueda">Buscar por nombre:</label><br>
-        <input type="text" id="nombre_busqueda" name="nombre_busqueda" placeholder="Nombre del paciente" required>
-        <button type="submit" style="margin-top: 1rem;">Buscar</button>
-    </form>
+    <!-- Tabla dinámica de resultados -->
+    <div id="tablaResultados" style="margin-top: 1.5rem;"></div>
 
-    <hr style="margin: 2rem 0;">
+    <hr style="margin: 3rem 0;">
 
-    <!-- Registrar nuevo paciente -->
-    <form action="/guardar_paciente" method="post">
+    <!-- Formulario para registrar nuevo paciente -->
+    <form action="/guardar_paciente" method="post" style="max-width: 400px; margin: auto;">
         <h2>Registrar Nuevo Paciente</h2>
 
         <label for="nombre">Nombre:</label><br>
@@ -37,6 +38,85 @@
 
         <button type="submit">Guardar y Continuar</button>
     </form>
-
 </div>
+
+<script>
+    const inputBusqueda = document.getElementById('nombre_busqueda');
+    const contenedorTabla = document.getElementById('tablaResultados');
+    let paginaActual = 1;
+    let resultadosPorPagina = 10;
+    let resultadosTotales = [];
+
+    inputBusqueda.addEventListener('input', async () => {
+        const termino = inputBusqueda.value.trim();
+        if (termino.length === 0) {
+            contenedorTabla.innerHTML = '';
+            return;
+        }
+
+        const res = await fetch(`/buscar_pacientes?termino=${encodeURIComponent(termino)}`);
+        const data = await res.json();
+        resultadosTotales = data.pacientes;
+        paginaActual = 1;
+        mostrarTabla();
+    });
+
+    function mostrarTabla() {
+        const inicio = (paginaActual - 1) * resultadosPorPagina;
+        const fin = inicio + resultadosPorPagina;
+        const pacientes = resultadosTotales.slice(inicio, fin);
+
+        if (pacientes.length === 0) {
+            contenedorTabla.innerHTML = `<p style="text-align:center;">⚠️ No se encontraron coincidencias.</p>`;
+            return;
+        }
+
+        let html = `
+    <table style="width:100%; border-collapse: collapse;">
+        <thead>
+            <tr style="background-color: var(--color-secundario);">
+                <th>Nombre</th>
+                <th>Apellido</th>
+                <th>Edad</th>
+                <th>Complexión</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>`;
+
+        pacientes.forEach(p => {
+            html += `
+            <tr>
+                <td>${p.nombre}</td>
+                <td>${p.apellido}</td>
+                <td>${p.edad}</td>
+                <td>${p.complexion}</td>
+                <td>
+                    <a href="/captura?nombre=${p.nombre}&apellido=${p.apellido}&edad=${p.edad}">Seleccionar</a> |
+                    <a href="/editar/${p.index}">Editar</a> |
+                    <a href="/eliminar/${p.index}" onclick="return confirm('¿Eliminar este paciente?')">Eliminar</a>
+                </td>
+            </tr>`;
+        });
+
+        html += `</tbody></table>`;
+
+        // Paginación
+        const totalPaginas = Math.ceil(resultadosTotales.length / resultadosPorPagina);
+        if (totalPaginas > 1) {
+            html += `<div style="margin-top:1rem; text-align:center;">`;
+            for (let i = 1; i <= totalPaginas; i++) {
+                html += `<button onclick="cambiarPagina(${i})" style="margin: 0 5px;" ${i === paginaActual ? 'disabled' : ''}>${i}</button>`;
+            }
+            html += `</div>`;
+        }
+
+        contenedorTabla.innerHTML = html;
+    }
+
+    function cambiarPagina(nuevaPagina) {
+        paginaActual = nuevaPagina;
+        mostrarTabla();
+    }
+</script>
 {% endblock %}
