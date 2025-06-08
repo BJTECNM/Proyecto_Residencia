@@ -20,6 +20,10 @@
 ## 🖥️ Tecnologías utilizadas
 
 - Inteligencia Artificial de Aprendizaje Automático
+- JavaScript
+- MediaPipe
 - Python
 - OpenCV
-- MediaPipe
+- Flask
+- HTML
+- CSS

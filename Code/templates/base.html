@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Aplicación{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="{{ url_for('static', filename='script.js') }}" defer></script>
+</head>
+
+<body>
+    <header class="app-header">
+        <h1 class="app-title">{% block header %}Sistema de Pacientes{% endblock %}</h1>
+        <button id="themeButton" class="theme-toggle" onclick="toggleTheme()">
+            <span id="themeIcon">☀️</span>
+        </button>
+    </header>
+
+    <main style="margin-top: 80px;">
+        {% block content %}{% endblock %}
+    </main>
+</body>
+
+</html>

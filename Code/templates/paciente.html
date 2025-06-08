@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}Registro de Paciente{% endblock %}
+{% block header %}Buscar o Registrar Paciente{% endblock %}
+{% block content %}
+<div style="max-width: 500px; margin: 2rem auto; text-align: center;">
+
+    <!-- Buscar paciente -->
+    <form action="/seleccionar_paciente" method="post" style="margin-bottom: 3rem;">
+        <label for="nombre_busqueda">Buscar por nombre:</label><br>
+        <input type="text" id="nombre_busqueda" name="nombre_busqueda" placeholder="Nombre del paciente" required>
+        <button type="submit" style="margin-top: 1rem;">Buscar</button>
+    </form>
+
+    <hr style="margin: 2rem 0;">
+
+    <!-- Registrar nuevo paciente -->
+    <form action="/guardar_paciente" method="post">
+        <h2>Registrar Nuevo Paciente</h2>
+
+        <label for="nombre">Nombre:</label><br>
+        <input type="text" name="nombre" required><br><br>
+
+        <label for="apellido">Apellido:</label><br>
+        <input type="text" name="apellido" required><br><br>
+
+        <label for="edad">Edad:</label><br>
+        <input type="number" name="edad" required><br><br>
+
+        <label for="complexion">Complexión:</label><br>
+        <select name="complexion" required>
+            <option value="">Seleccione</option>
+            <option value="Delgado">Delgado</option>
+            <option value="Normal">Normal</option>
+            <option value="Robusto">Robusto</option>
+            <option value="Sobrepeso">Sobrepeso</option>
+        </select><br><br>
+
+        <button type="submit">Guardar y Continuar</button>
+    </form>
+
+</div>
+{% endblock %}

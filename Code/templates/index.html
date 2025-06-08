@@ -41,6 +41,13 @@
     </div>
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>
+
+    {% if paciente %}
+    <div style="text-align:center; margin-top: 2rem; font-size: 1.2rem;">
+        <strong>Paciente:</strong> {{ paciente.nombre }} {{ paciente.apellido }}, {{ paciente.edad }} años
+    </div>
+    {% endif %}
+
 </body>
 
 </html>
