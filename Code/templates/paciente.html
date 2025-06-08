@@ -3,48 +3,56 @@
 {% block header %}Buscar o Registrar Paciente{% endblock %}
 
 {% block content %}
-<div style="max-width: 900px; margin: 2rem auto; text-align: center;">
-    <!-- Campo de búsqueda -->
-    <label for="nombre_busqueda">Buscar paciente:</label><br>
-    <input type="text" id="nombre_busqueda" placeholder="Nombre o apellido"
-        style="width: 300px; margin-top: 0.5rem;"><br><br>
+<div
+    style="max-width: 1000px; margin: 2rem auto; display: flex; gap: 2rem; flex-wrap: wrap; align-items: flex-start; justify-content: center;">
 
-    <!-- Tabla dinámica de resultados -->
-    <div id="tablaResultados" style="margin-top: 1.5rem;"></div>
+    <!-- Columna izquierda: búsqueda y resultados -->
+    <div style="flex: 1; min-width: 320px; max-width: 480px;">
 
-    <hr style="margin: 3rem 0;">
+        <form style="text-align: left;" onsubmit="return false;">
+            <h2 style="text-align: center; margin-bottom: 1rem;">Buscar Paciente</h2>
+            <label for="nombre_busqueda">Nombre o apellido:</label>
+            <input type="text" id="nombre_busqueda">
+        </form>
 
-    <!-- Formulario para registrar nuevo paciente -->
-    <form action="/guardar_paciente" method="post" style="max-width: 400px; margin: auto;">
-        <h2>Registrar Nuevo Paciente</h2>
+        <div id="tablaResultados" style="margin-top: 1.5rem;"></div>
 
-        <label for="nombre">Nombre:</label><br>
-        <input type="text" name="nombre" required><br><br>
+    </div>
 
-        <label for="apellido">Apellido:</label><br>
-        <input type="text" name="apellido" required><br><br>
+    <!-- Columna derecha: registro de nuevo paciente -->
+    <div style="flex: 1; min-width: 320px; max-width: 480px;">
+        <form action="/guardar_paciente" method="post">
+            <h2 style="text-align: center; margin-bottom: 1rem;">Registrar Nuevo Paciente</h2>
 
-        <label for="edad">Edad:</label><br>
-        <input type="number" name="edad" required><br><br>
+            <label for="nombre">Nombre:</label>
+            <input type="text" name="nombre" required>
 
-        <label for="complexion">Complexión:</label><br>
-        <select name="complexion" required>
-            <option value="">Seleccione</option>
-            <option value="Delgado">Delgado</option>
-            <option value="Normal">Normal</option>
-            <option value="Robusto">Robusto</option>
-            <option value="Sobrepeso">Sobrepeso</option>
-        </select><br><br>
+            <label for="apellido">Apellido:</label>
+            <input type="text" name="apellido" required>
 
-        <button type="submit">Guardar y Continuar</button>
-    </form>
+            <label for="edad">Edad:</label>
+            <input type="number" name="edad" required>
+
+            <label for="complexion">Complexión:</label>
+            <select name="complexion" required>
+                <option value="">Seleccione</option>
+                <option value="Delgado">Delgado</option>
+                <option value="Normal">Normal</option>
+                <option value="Robusto">Robusto</option>
+                <option value="Sobrepeso">Sobrepeso</option>
+            </select>
+
+            <button type="submit" style="margin-top: 1rem;">Guardar y Continuar</button>
+        </form>
+    </div>
 </div>
 
+<!-- Script de búsqueda y paginación -->
 <script>
     const inputBusqueda = document.getElementById('nombre_busqueda');
     const contenedorTabla = document.getElementById('tablaResultados');
     let paginaActual = 1;
-    let resultadosPorPagina = 10;
+    const resultadosPorPagina = 10;
     let resultadosTotales = [];
 
     inputBusqueda.addEventListener('input', async () => {
@@ -72,36 +80,35 @@
         }
 
         let html = `
-    <table style="width:100%; border-collapse: collapse;">
-        <thead>
-            <tr style="background-color: var(--color-secundario);">
-                <th>Nombre</th>
-                <th>Apellido</th>
-                <th>Edad</th>
-                <th>Complexión</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>`;
+        <table>
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Apellido</th>
+                    <th>Edad</th>
+                    <th>Complexión</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>`;
 
         pacientes.forEach(p => {
             html += `
-            <tr>
-                <td>${p.nombre}</td>
-                <td>${p.apellido}</td>
-                <td>${p.edad}</td>
-                <td>${p.complexion}</td>
-                <td>
-                    <a href="/captura?nombre=${p.nombre}&apellido=${p.apellido}&edad=${p.edad}">Seleccionar</a> |
-                    <a href="/editar/${p.index}">Editar</a> |
-                    <a href="/eliminar/${p.index}" onclick="return confirm('¿Eliminar este paciente?')">Eliminar</a>
-                </td>
-            </tr>`;
+                <tr>
+                    <td>${p.nombre}</td>
+                    <td>${p.apellido}</td>
+                    <td>${p.edad}</td>
+                    <td>${p.complexion}</td>
+                    <td>
+                        <a href="/captura?nombre=${p.nombre}&apellido=${p.apellido}&edad=${p.edad}">Seleccionar</a> |
+                        <a href="/editar/${p.index}">Editar</a> |
+                        <a href="/eliminar/${p.index}" onclick="return confirm('¿Eliminar este paciente?')">Eliminar</a>
+                    </td>
+                </tr>`;
         });
 
         html += `</tbody></table>`;
 
-        // Paginación
         const totalPaginas = Math.ceil(resultadosTotales.length / resultadosPorPagina);
         if (totalPaginas > 1) {
             html += `<div style="margin-top:1rem; text-align:center;">`;
