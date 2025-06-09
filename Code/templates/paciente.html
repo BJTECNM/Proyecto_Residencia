@@ -1,7 +1,6 @@
 {% extends 'base.html' %}
 {% block title %}Registro de Paciente{% endblock %}
 {% block header %}Buscar o Registrar Paciente{% endblock %}
-
 {% block content %}
 <div
     style="max-width: 1000px; margin: 2rem auto; display: flex; gap: 2rem; flex-wrap: wrap; align-items: flex-start; justify-content: center;">
@@ -99,10 +98,10 @@
                     <td>${p.apellido}</td>
                     <td>${p.edad}</td>
                     <td>${p.complexion}</td>
-                    <td>
-                        <a href="/captura?nombre=${p.nombre}&apellido=${p.apellido}&edad=${p.edad}">Seleccionar</a> |
-                        <a href="/editar/${p.index}">Editar</a> |
-                        <a href="/eliminar/${p.index}" onclick="return confirm('¿Eliminar este paciente?')">Eliminar</a>
+                    <td class="tabla-acciones">
+                        <a href="/captura?nombre=${p.nombre}&apellido=${p.apellido}&edad=${p.edad}" class="accion-ver">Seleccionar</a>
+                        <a href="/editar/${p.index}" class="accion-editar">Editar</a>
+                        <a href="/eliminar/${p.index}" class="accion-eliminar" onclick="return confirm('¿Eliminar este paciente?')">Eliminar</a>
                     </td>
                 </tr>`;
         });

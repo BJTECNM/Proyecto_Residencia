@@ -110,10 +110,10 @@ body {
 .layout-container {
     display: flex;
     justify-content: center;
-    align-items: center;
-    height: calc(100vh - 70px);
+    align-items: flex-start;
+    flex-wrap: wrap;
     margin-top: 70px;
-    max-width: 960px;
+    max-width: 1200px;
     margin-left: auto;
     margin-right: auto;
     gap: 2rem;
@@ -203,6 +203,7 @@ form label,
 label {
     display: block;
     margin-bottom: 0.5rem;
+    font-size: 1.1rem;
     font-weight: 600;
     color: var(--color-principal);
     text-align: left;
@@ -231,6 +232,105 @@ td {
 thead {
     background-color: var(--color-secundario);
     color: var(--color-texto);
+}
+
+/* Estilo de acciones en tabla */
+.tabla-acciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.tabla-acciones a {
+    display: inline-block;
+    text-decoration: none;
+    font-weight: 500;
+    padding: 0.3rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    color: white;
+    white-space: nowrap;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+a.accion-ver {
+    background-color: #2c7a7b;
+}
+
+a.accion-ver:hover {
+    background-color: #285e61;
+}
+
+a.accion-editar {
+    background-color: #2b6cb0;
+}
+
+a.accion-editar:hover {
+    background-color: #2c5282;
+}
+
+a.accion-eliminar {
+    background-color: #c53030;
+}
+
+a.accion-eliminar:hover {
+    background-color: #9b2c2c;
+}
+
+/* Tema oscuro*/
+[data-theme="dark"] a.accion-ver {
+    background-color: #319795;
+}
+
+[data-theme="dark"] a.accion-ver:hover {
+    background-color: #2c7a7b;
+}
+
+[data-theme="dark"] a.accion-editar {
+    background-color: #3b82f6;
+}
+
+[data-theme="dark"] a.accion-editar:hover {
+    background-color: #2563eb;
+}
+
+[data-theme="dark"] a.accion-eliminar {
+    background-color: #ef4444;
+}
+
+[data-theme="dark"] a.accion-eliminar:hover {
+    background-color: #dc2626;
+}
+
+.grupo-ejercicios {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.btn-ejercicio {
+    width: 180px;
+    padding: 0.6rem;
+    border: none;
+    border-radius: 6px;
+    background-color: var(--color-boton);
+    color: white;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: background-color 0.3s ease;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn-ejercicio:hover {
+    background-color: var(--color-boton-hover);
+}
+
+.btn-ejercicio.activo {
+    background-color: var(--color-principal);
+    font-weight: 600;
+    border: 2px solid var(--color-borde);
 }
 
 /* Fade animación */

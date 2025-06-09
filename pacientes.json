@@ -10,5 +10,11 @@
         "apellido": "Figueroa",
         "edad": "52",
         "complexion": "Normal"
+    },
+    {
+        "nombre": "Adolfo",
+        "apellido": "Martinez",
+        "edad": "72",
+        "complexion": "Delgado"
     }
 ]

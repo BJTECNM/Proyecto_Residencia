@@ -2,33 +2,70 @@
 {% block title %}Monitoreo Inteligente de Ejercicio y Postura{% endblock %}
 {% block header %}Monitoreo Inteligente de Ejercicio y Postura{% endblock %}
 {% block content %}
-<div class="layout-container">
-    <!-- Columna izquierda: botones -->
+<div class="layout-container" style="align-items: flex-start; flex-wrap: wrap; gap: 2rem;">
+
+    <!-- Columna izquierda: controles -->
     <aside class="sidebar-left">
-        <label for="cameraSelect">
-            Seleccionar cámara:
-        </label>
+        <label for="cameraSelect">Seleccionar cámara:</label>
         <select id="cameraSelect"></select>
-        <br><br>
+
         <button id="startBtn" onclick="startStream()" {% if stream_active %}disabled{% endif %}>
             Iniciar
         </button>
-        <br><br>
+
         <button id="stopBtn" onclick="stopStream()" disabled>
             Detener
         </button>
+
+        <button onclick="salirCaptura()">Salir</button>
     </aside>
 
-    <!-- Columna derecha: video -->
-    <main class="video-area">
+    <!-- Columna central: video + nombre del paciente -->
+    <main class="video-area" style="display: flex; flex-direction: column; align-items: center;">
         <img id="video-feed" class="fade" src="{{ url_for('static', filename='placeholder.jpg') }}"
             alt="Captura de Video" onerror="this.src='{{ url_for('static', filename='placeholder.png') }}'">
+
+        {% if paciente %}
+        <div style="margin-top: 1rem; font-size: 1.2rem; text-align: center;">
+            <strong>Paciente:</strong> {{ paciente.nombre }} {{ paciente.apellido }}, {{ paciente.edad }} años
+        </div>
+        {% endif %}
     </main>
+
+    <!-- Columna derecha: botones de ejercicio -->
+    <aside class="sidebar-left" style="gap: 1rem;">
+        <label style="text-align: center;">Ejercicio a realizar:</label>
+        <div id="botones-ejercicio" class="grupo-ejercicios">
+            <button class="btn-ejercicio activo" data-ejercicio="flexion_codo">Flexión codo</button>
+            <button class="btn-ejercicio" data-ejercicio="flexiones">Flexiones</button>
+            <button class="btn-ejercicio" data-ejercicio="sentadilla">Sentadilla</button>
+            <button class="btn-ejercicio" data-ejercicio="estiramiento">Estiramiento</button>
+        </div>
+    </aside>
 </div>
 
-{% if paciente %}
-<div style="text-align:center; margin-top: 2rem; font-size: 1.2rem;">
-    <strong>Paciente:</strong> {{ paciente.nombre }} {{ paciente.apellido }}, {{ paciente.edad }} años
-</div>
-{% endif %}
+<script>
+    function salirCaptura() {
+        fetch('/stop', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+        }).then(() => {
+            window.location.replace("/registro_paciente");
+        });
+    }
+
+    // Botones exclusivos de ejercicio
+    document.addEventListener('DOMContentLoaded', () => {
+        const botones = document.querySelectorAll('.btn-ejercicio');
+        botones.forEach(btn => {
+            btn.addEventListener('click', () => {
+                botones.forEach(b => b.classList.remove('activo'));
+                btn.classList.add('activo');
+                // Aquí podrías guardar el ejercicio seleccionado si es necesario
+                console.log("Ejercicio seleccionado:", btn.dataset.ejercicio);
+            });
+        });
+    });
+</script>
 {% endblock %}
