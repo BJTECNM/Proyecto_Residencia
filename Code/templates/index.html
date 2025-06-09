@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% block title %}Monitoreo Inteligente de Ejercicio y Postura{% endblock %}
-{% block header %}Monitoreo Inteligente de Ejercicio y Postura{% endblock %}
+{% block header %}MONITOREO INTELIGENTE DE EJERCICIO Y POSTURA{% endblock %}
 {% block content %}
 <div class="layout-container" style="align-items: flex-start; flex-wrap: wrap; gap: 2rem;">
 
@@ -32,10 +32,9 @@
         {% endif %}
     </main>
 
-    <!-- Columna derecha: botones de ejercicio -->
-    <aside class="sidebar-left" style="gap: 1rem;">
-        <label style="text-align: center;">Ejercicio a realizar:</label>
-        <div id="botones-ejercicio" class="grupo-ejercicios">
+    <aside class="sidebar-left">
+        <label>Ejercicio a realizar:</label>
+        <div id="botones-ejercicio" class="sidebar-left">
             <button class="btn-ejercicio activo" data-ejercicio="flexion_codo">Flexión codo</button>
             <button class="btn-ejercicio" data-ejercicio="flexiones">Flexiones</button>
             <button class="btn-ejercicio" data-ejercicio="sentadilla">Sentadilla</button>

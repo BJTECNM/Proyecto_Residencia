@@ -2,24 +2,32 @@
 {% block title %}Editar Paciente{% endblock %}
 {% block header %}Editar Información del Paciente{% endblock %}
 {% block content %}
-<form action="/actualizar/{{ idx }}" method="post" style="max-width: 400px; margin: auto;">
-    <label>Nombre:</label><br>
-    <input type="text" name="nombre" value="{{ paciente.nombre }}" required><br><br>
 
-    <label>Apellido:</label><br>
-    <input type="text" name="apellido" value="{{ paciente.apellido }}" required><br><br>
+<div class="layout-container">
+    <form action="/actualizar/{{ idx }}" method="post">
+        <h2>Actualizar Información del paciente</h2>
+        <label>Nombre:</label>
+        <input type="text" name="nombre" value="{{ paciente.nombre }}" required style="max-width: 1200px;">
 
-    <label>Edad:</label><br>
-    <input type="number" name="edad" value="{{ paciente.edad }}" required><br><br>
+        <label>Apellido:</label>
+        <input type="text" name="apellido" value="{{ paciente.apellido }}" required style="max-width: 1200px;">
 
-    <label>Complexión:</label><br>
-    <select name="complexion" required>
-        <option value="Delgado" {% if paciente.complexion=='Delgado' %}selected{% endif %}>Delgado</option>
-        <option value="Normal" {% if paciente.complexion=='Normal' %}selected{% endif %}>Normal</option>
-        <option value="Robusto" {% if paciente.complexion=='Robusto' %}selected{% endif %}>Robusto</option>
-        <option value="Sobrepeso" {% if paciente.complexion=='Sobrepeso' %}selected{% endif %}>Sobrepeso</option>
-    </select><br><br>
+        <label>Edad:</label>
+        <input type="number" name="edad" value="{{ paciente.edad }}" required style="max-width: 1200px;">
 
-    <button type="submit">Actualizar</button>
-</form>
+        <label>Complexión:</label>
+        <select name="complexion" required style="max-width: 1200px;">
+            <option value="Delgado" {% if paciente.complexion=='Delgado' %}selected{% endif %}>Delgado</option>
+            <option value="Normal" {% if paciente.complexion=='Normal' %}selected{% endif %}>Normal</option>
+            <option value="Robusto" {% if paciente.complexion=='Robusto' %}selected{% endif %}>Robusto</option>
+            <option value="Sobrepeso" {% if paciente.complexion=='Sobrepeso' %}selected{% endif %}>Sobrepeso</option>
+        </select>
+
+        <div class="layout-container">
+            <button type="submit">Actualizar</button>
+            <a href="{{ url_for('registro_paciente') }}" class="cancelar-btn">Cancelar</a>
+        </div>
+    </form>
+</div>
+
 {% endblock %}

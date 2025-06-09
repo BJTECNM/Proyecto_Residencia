@@ -1,15 +1,14 @@
 {% extends 'base.html' %}
 {% block title %}Registro de Paciente{% endblock %}
-{% block header %}Buscar o Registrar Paciente{% endblock %}
+{% block header %}BÚSQUEDA Y REGISTRO DE PACIENTES{% endblock %}
 {% block content %}
-<div
-    style="max-width: 1000px; margin: 2rem auto; display: flex; gap: 2rem; flex-wrap: wrap; align-items: flex-start; justify-content: center;">
+<div class="layout-container" style="align-items: flex-start; flex-wrap: wrap; gap: 2rem;">
 
     <!-- Columna izquierda: búsqueda y resultados -->
     <div style="flex: 1; min-width: 320px; max-width: 480px;">
 
         <form style="text-align: left;" onsubmit="return false;">
-            <h2 style="text-align: center; margin-bottom: 1rem;">Buscar Paciente</h2>
+            <h2>Buscar Paciente</h2>
             <label for="nombre_busqueda">Nombre o apellido:</label>
             <input type="text" id="nombre_busqueda">
         </form>
@@ -21,7 +20,7 @@
     <!-- Columna derecha: registro de nuevo paciente -->
     <div style="flex: 1; min-width: 320px; max-width: 480px;">
         <form action="/guardar_paciente" method="post">
-            <h2 style="text-align: center; margin-bottom: 1rem;">Registrar Nuevo Paciente</h2>
+            <h2>Registrar Nuevo Paciente</h2>
 
             <label for="nombre">Nombre:</label>
             <input type="text" name="nombre" required>
