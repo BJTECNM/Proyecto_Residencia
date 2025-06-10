@@ -1,27 +1,25 @@
 import cv2
 import mediapipe as mp
 import numpy as np
-import csv
 import os
 import threading
 import time
 import tkinter as tk
 from tkinter import ttk
 import pygame
+from datetime import datetime
 
 # ---------- Configuración general ----------
-CSV_FILE = "modelo_ejercicios.csv"
+DATA_DIR = "data"
 EXERCISES = {
     "Flexión codo": "flexion_codo",
     "Flexiones": "flexiones",
     "Sentadilla": "sentadilla",
     "Estiramiento": "estiramiento"
 }
-
-# Inicializa pygame mixer al inicio
 pygame.mixer.init()
 
-# MediaPipe setup
+# MediaPipe
 mp_pose = mp.solutions.pose
 pose = mp_pose.Pose()
 mp_drawing = mp.solutions.drawing_utils
@@ -29,16 +27,16 @@ mp_drawing = mp.solutions.drawing_utils
 # Variables globales
 grabando = False
 repeticion = []
+start_time = None
 exercise_label = ""
 
 
-# Función para reproducir sonido
+# ---------- Funciones auxiliares ----------
 def reproducir_sonido(path):
     pygame.mixer.music.load(path)
     pygame.mixer.music.play()
 
 
-# ---------- Cálculo de ángulos ----------
 def calcular_angulo(a, b, c):
     a, b, c = np.array(a), np.array(b), np.array(c)
     ba = a - b
@@ -49,7 +47,7 @@ def calcular_angulo(a, b, c):
     return np.degrees(angulo)
 
 
-def extraer_angulos(landmarks):
+def extraer_datos(landmarks):
     puntos = [(lm.x, lm.y) for lm in landmarks]
     angulos = [
         calcular_angulo(puntos[11], puntos[13], puntos[15]),  # Brazo izq
@@ -59,43 +57,56 @@ def extraer_angulos(landmarks):
         calcular_angulo(puntos[25], puntos[27], puntos[31]),  # Rodilla izq
         calcular_angulo(puntos[26], puntos[28], puntos[32]),  # Rodilla der
     ]
-    return angulos
+    coords = []
+    for lm in landmarks:
+        coords.extend([lm.x, lm.y])
+    return angulos + coords
 
 
-# ---------- Grabación y guardado ----------
 def guardar_repeticion():
-    global repeticion, exercise_label
+    global repeticion, exercise_label, start_time
 
     if not repeticion:
         return
 
-    with open(CSV_FILE, 'a', newline='') as f:
-        writer = csv.writer(f)
-        # Escribir fila: ang1, ang2, ..., angN, etiqueta
-        fila = np.mean(repeticion, axis=0).tolist()
-        fila.append(exercise_label)
-        writer.writerow(fila)
-    print("[INFO] Repetición guardada.")
+    end_time = time.time()
+    duracion = round(end_time - start_time, 2)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    ejercicio_dir = os.path.join(DATA_DIR, exercise_label)
+
+    os.makedirs(ejercicio_dir, exist_ok=True)
+    rep_id = f"{exercise_label}_{timestamp}"
+
+    npy_path = os.path.join(ejercicio_dir, f"{rep_id}.npy")
+    np.save(npy_path, np.array(repeticion))
+
+    # También guardamos CSV opcional (para depuración o entrenamiento clásico)
+    csv_path = os.path.join(ejercicio_dir, f"{rep_id}.csv")
+    with open(csv_path, 'w') as f:
+        for frame in repeticion:
+            f.write(",".join(map(str, frame)) + "\n")
+
+    print(f"[INFO] Repetición guardada como {rep_id} ({duracion} s)")
 
 
 # ---------- Interfaz gráfica ----------
 def iniciar_grabacion():
-    global grabando, repeticion, exercise_label
+    global grabando, repeticion, exercise_label, start_time
 
     exercise_label = EXERCISES[combo.get()]
     estado.set("Preparándote...")
     ventana.update()
 
-    # Esperar 5 segundos
     threading.Thread(target=esperar_y_empezar).start()
 
 
 def esperar_y_empezar():
-    global grabando, repeticion
+    global grabando, repeticion, start_time
     time.sleep(5)
-    reproducir_sonido("start.wav")
+    reproducir_sonido("start.mp3")
     repeticion = []
     grabando = True
+    start_time = time.time()
     estado.set("Grabando...")
     ventana.update()
 
@@ -133,7 +144,6 @@ def procesar_video():
     global grabando, repeticion
 
     cap = cv2.VideoCapture(0)
-
     while True:
         ret, frame = cap.read()
         if not ret:
@@ -148,8 +158,8 @@ def procesar_video():
                 image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
 
             if grabando:
-                angulos = extraer_angulos(results.pose_landmarks.landmark)
-                repeticion.append(angulos)
+                datos = extraer_datos(results.pose_landmarks.landmark)
+                repeticion.append(datos)
 
         cv2.imshow("Vista en vivo", image)
         if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -159,15 +169,9 @@ def procesar_video():
     cv2.destroyAllWindows()
 
 
-# Crear encabezado CSV si no existe
-if not os.path.isfile(CSV_FILE):
-    with open(CSV_FILE, 'w', newline='') as f:
-        writer = csv.writer(f)
-        writer.writerow([f"ang_{i}" for i in range(6)] + ["label"])
-
-# Ejecutar video en otro hilo
+# Ejecutar procesamiento de video en hilo separado
 video_thread = threading.Thread(target=procesar_video)
 video_thread.start()
 
-# Ejecutar interfaz
+# Iniciar interfaz
 ventana.mainloop()
