@@ -10,6 +10,7 @@ app = Flask(__name__)
 video_capture = None
 stream_active = False
 lock = threading.Lock()
+ejercicio_seleccionado = "flexion_codo"  # valor inicial
 
 
 @app.route('/')
@@ -102,10 +103,11 @@ def pantalla_captura():
 
 @app.route('/start', methods=['POST'])
 def start_stream():
-    global video_capture, stream_active
+    global video_capture, stream_active, ejercicio_seleccionado
 
     data = request.get_json()
     camera_index = data.get('camara_index', 0)
+    ejercicio_seleccionado = data.get('ejercicio', 'flexion_codo')
 
     with lock:
         if not stream_active:
@@ -152,7 +154,7 @@ def video():
             if not ret:
                 break
 
-            proccessed_frame = detect_pose(frame)
+            proccessed_frame = detect_pose(frame, ejercicio_seleccionado)
             ret, buffer = cv2.imencode('.jpg', proccessed_frame, [
                 int(cv2.IMWRITE_JPEG_QUALITY), 85])
             if not ret:

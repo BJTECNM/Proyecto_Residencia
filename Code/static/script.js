@@ -1,4 +1,13 @@
 let isStreaming = false;
+let ejercicioActual = "flexion_codo";  // valor por defecto
+
+document.querySelectorAll('.btn-ejercicio').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.btn-ejercicio').forEach(b => b.classList.remove('activo'));
+        btn.classList.add('activo');
+        ejercicioActual = btn.dataset.ejercicio;
+    });
+});
 
 async function populateCameras() {
     const cameraSelect = document.getElementById('cameraSelect');
@@ -28,7 +37,10 @@ function startStream() {
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ camara_index: parseInt(cameraIndex) })
+        body: JSON.stringify({
+            camara_index: parseInt(cameraIndex),
+            ejercicio: ejercicioActual
+        })
     })
         .then(response => response.json())
         .then(data => {
