@@ -5,22 +5,54 @@ import numpy as np
 
 
 modelo_postura = load_model('modelo_ejercicios_lstm.h5')
+modelo_sentadilla = load_model('modelo_sentadillas_lstm.h5')
 mp_pose = mp.solutions.pose
 mp_drawing = mp.solutions.drawing_utils
-
 pose_detector = mp_pose.Pose(
     min_detection_confidence=0.5, min_tracking_confidence=0.5)
+
+# Variables globales
+secuencia_actual = []
+SEQUENCE_LENGTH = 60
+INPUT_DIM = 72
+repeticiones = 0
+ultima_clase = None
+retroalimentacion = ""
+
+
+def calcular_angulos(landmarks):
+    def get_angle(a, b, c):
+        a = np.array([a.x, a.y])
+        b = np.array([b.x, b.y])
+        c = np.array([c.x, c.y])
+        ba = a - b
+        bc = c - b
+        cosine = np.dot(ba, bc) / (np.linalg.norm(ba)
+                                   * np.linalg.norm(bc) + 1e-6)
+        return np.degrees(np.arccos(np.clip(cosine, -1.0, 1.0)))
+
+    lmk = landmarks.landmark
+    return [
+        get_angle(lmk[23], lmk[25], lmk[27]),
+        get_angle(lmk[24], lmk[26], lmk[28]),
+        get_angle(lmk[11], lmk[23], lmk[25]),
+        get_angle(lmk[12], lmk[24], lmk[26]),
+        get_angle(lmk[13], lmk[11], lmk[23]),
+        get_angle(lmk[14], lmk[12], lmk[24]),
+    ]
 
 
 def extract_landmark_data(results):
     keypoints = []
     if results.pose_landmarks:
-        for lm in results.pose_landmarks.landmark:
-            keypoints.extend([lm.x, lm.y, lm.z])
+        for lm in results.pose_landmarks.landmark[:33]:
+            keypoints.extend([lm.x, lm.y])
     return keypoints if keypoints else None
 
 
 def detect_pose(frame, ejercicio):
+    global secuencia_actual, repeticiones, ultima_clase, retroalimentacion
+
     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     results = pose_detector.process(rgb_frame)
 
@@ -35,17 +67,32 @@ def detect_pose(frame, ejercicio):
 
         keypoints = extract_landmark_data(results)
         if keypoints:
-            entrada = np.array(keypoints).reshape(1, -1)
-            prediccion = modelo_postura.predict(entrada)
-            clase_predicha = np.argmax(prediccion)
+            while len(keypoints) < INPUT_DIM:
+                keypoints.append(0.0)  # padding si faltan puntos
 
-            # Aquí decides cómo dar retroalimentación y conteo
-            feedback = interpretar_resultado(clase_predicha, ejercicio)
+            secuencia_actual.append(keypoints)
+            if len(secuencia_actual) > SEQUENCE_LENGTH:
+                secuencia_actual.pop(0)
 
-            # Mostrar feedback en pantalla
-            cv2.putText(frame, feedback, (10, 30),
-                        cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+            if len(secuencia_actual) == SEQUENCE_LENGTH:
+                entrada = np.array(secuencia_actual).reshape(
+                    1, SEQUENCE_LENGTH, INPUT_DIM)
+                prediccion = modelo_postura.predict(entrada, verbose=0)
+                clase_predicha = np.argmax(prediccion)
 
+                retroalimentacion = interpretar_resultado(
+                    clase_predicha, ejercicio)
+
+                if clase_predicha == 0 and ultima_clase != 0:
+                    repeticiones += 1
+                ultima_clase = clase_predicha
+
+                # Mostrar retroalimentación
+                cv2.putText(frame, f"{retroalimentacion}", (10, 30),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
+
+    cv2.putText(frame, f"Repeticiones: {repeticiones}", (10, 70),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 255, 0), 2)
     return frame
 
 
@@ -84,3 +131,21 @@ def interpretar_resultado(clase, ejercicio):
         else:
             return "Corrige la espalda"
     return "Analizando..."
+
+
+def reiniciar_contador():
+    global secuencia_actual, repeticiones, ultima_clase, retroalimentacion
+    secuencia_actual = []
+    repeticiones = 0
+    ultima_clase = None
+    retroalimentacion = ""
+
+
+def obtener_repeticiones():
+    global repeticiones
+    return repeticiones
+
+
+def obtener_feedback():
+    global retroalimentacion
+    return retroalimentacion

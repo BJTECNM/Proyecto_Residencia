@@ -1,5 +1,8 @@
 let isStreaming = false;
 let ejercicioActual = "flexion_codo";  // valor por defecto
+let repeticiones = 0; // valor por defecto
+let feedbackTexto = "Esperando indicaciones..."; // valor por defecto
+
 
 document.querySelectorAll('.btn-ejercicio').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -118,6 +121,23 @@ window.addEventListener('load', async () => {
             }
         });
 });
+
+// Actualiza contador de repeticiones y feedback cada segundo
+setInterval(() => {
+    if (isStreaming) {
+        fetch('/contador')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('reps').textContent = data.repeticiones;
+            });
+
+        fetch('/feedback')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('feedback').textContent = data.mensaje;
+            });
+    }
+}, 1000);
 
 function toggleTheme() {
     const html = document.documentElement;

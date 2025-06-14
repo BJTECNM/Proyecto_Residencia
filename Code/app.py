@@ -3,7 +3,7 @@ import os
 import json
 import cv2
 import threading
-from pose_detection import detect_pose
+from pose_detection import detect_pose, reiniciar_contador, obtener_repeticiones, obtener_feedback
 
 app = Flask(__name__)
 
@@ -119,6 +119,8 @@ def start_stream():
                 return jsonify({"success": False, "error": "No se pudo acceder a la cámara."})
 
             stream_active = True
+            reiniciar_contador()
+
             return jsonify({"success": True})
         else:
             return jsonify({"success": False, "error": "Ya hay una transmisión activa"})
@@ -170,6 +172,16 @@ def video():
 def status():
     with lock:
         return jsonify({"active": stream_active})
+
+
+@app.route('/contador')
+def contador():
+    return jsonify({"repeticiones": obtener_repeticiones()})
+
+
+@app.route('/feedback')
+def feedback():
+    return jsonify({"mensaje": obtener_feedback()})
 
 
 # === Funciones auxiliares ===
