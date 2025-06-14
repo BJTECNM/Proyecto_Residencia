@@ -99,11 +99,6 @@ def detect_pose(frame, ejercicio):
                         repeticiones += 1
                     ultima_clase = clase_predicha
 
-                    cv2.putText(frame, f"{retroalimentacion}", (10, 30),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
-
-    cv2.putText(frame, f"Repeticiones: {repeticiones}", (10, 70),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 255, 0), 2)
     return frame
 
 
