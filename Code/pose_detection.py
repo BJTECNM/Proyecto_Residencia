@@ -8,7 +8,7 @@ modelos = {
     "flexion_codo": load_model("modelo_flexion_codo.h5"),
     #"flexiones": load_model("modelo_flexiones_lstm.h5"),
     "sentadilla": load_model("modelo_sentadillas.h5"),
-    #"estiramiento": load_model("modelo_estiramiento_lstm.h5"),
+    "estiramiento": load_model("modelo_estiramiento.h5"),
 }
 
 # === MediaPipe ===
