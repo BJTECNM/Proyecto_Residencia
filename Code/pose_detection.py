@@ -5,9 +5,9 @@ from tensorflow.keras.models import load_model
 
 # === Cargar modelos específicos ===
 modelos = {
-    #"flexion_codo": load_model("modelo_flexiones_codo_lstm.h5"),
+    "flexion_codo": load_model("modelo_flexion_codo.h5"),
     #"flexiones": load_model("modelo_flexiones_lstm.h5"),
-    "sentadilla": load_model("modelo_sentadillas_lstm.h5"),
+    "sentadilla": load_model("modelo_sentadillas.h5"),
     #"estiramiento": load_model("modelo_estiramiento_lstm.h5"),
 }
 
