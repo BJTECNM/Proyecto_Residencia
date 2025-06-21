@@ -5,10 +5,19 @@ let feedbackTexto = "Esperando indicaciones..."; // valor por defecto
 
 
 document.querySelectorAll('.btn-ejercicio').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
         document.querySelectorAll('.btn-ejercicio').forEach(b => b.classList.remove('activo'));
         btn.classList.add('activo');
         ejercicioActual = btn.dataset.ejercicio;
+
+        // Detener la transmisión si está activa
+        if (isStreaming) {
+            await stopStream();
+        }
+
+        // Reiniciar contador y feedback en pantalla
+        document.getElementById('reps').textContent = "0";
+        document.getElementById('feedback').textContent = "Esperando indicaciones...";
     });
 });
 

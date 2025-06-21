@@ -6,9 +6,17 @@ from tensorflow.keras.models import load_model
 # === Cargar modelos específicos ===
 modelos = {
     "flexion_codo": load_model("modelo_flexion_codo.h5"),
-    #"flexiones": load_model("modelo_flexiones_lstm.h5"),
+    # "flexiones": load_model("modelo_flexiones_lstm.h5"),
     "sentadilla": load_model("modelo_sentadillas.h5"),
     "estiramiento": load_model("modelo_estiramiento.h5"),
+}
+
+# === Diccionario de etiquetas por modelo ===
+ETIQUETAS_MODELOS = {
+    "flexion_codo": ["De pie", "Flexión de codo", "No se puede detectar bien", "Coloque al paciente dentro del área de captura"],
+    "flexiones": ["De pie", "Flexiones", "No se puede detectar bien", "Coloque al paciente dentro del área de captura"],
+    "sentadilla": ["De pie", "Sentadilla", "No se puede detectar bien", "Coloque al paciente dentro del área de captura"],
+    "estiramiento": ["De pie", "Estiramiento", "No se puede detectar bien", "Coloque al paciente dentro del área de captura"]
 }
 
 # === MediaPipe ===
@@ -18,7 +26,7 @@ pose_detector = mp_pose.Pose(
     min_detection_confidence=0.5, min_tracking_confidence=0.5)
 
 # === Parámetros de entrada ===
-SEQUENCE_LENGTH = 60
+SEQUENCE_LENGTH = 205
 INPUT_DIM = 72
 
 # === Estado global ===
@@ -76,6 +84,7 @@ def detect_pose(frame, ejercicio):
 
         keypoints = extract_landmark_data(results)
         angulos = calcular_angulos(results.pose_landmarks)
+
         if keypoints and len(angulos) == 6:
             keypoints.extend(angulos)
             keypoints = keypoints[:INPUT_DIM] + \
@@ -85,9 +94,15 @@ def detect_pose(frame, ejercicio):
             if len(secuencia_actual) > SEQUENCE_LENGTH:
                 secuencia_actual.pop(0)
 
+            if len(secuencia_actual) < SEQUENCE_LENGTH:
+                retroalimentacion = f"Cargando... ({len(secuencia_actual)}/{SEQUENCE_LENGTH})"
+
             if len(secuencia_actual) == SEQUENCE_LENGTH:
-                entrada = np.array(secuencia_actual).reshape(
-                    1, SEQUENCE_LENGTH, INPUT_DIM)
+                vector = np.array(secuencia_actual).flatten()
+                if vector.shape[0] < 14739:
+                    vector = np.pad(vector, (0, 14739 - vector.shape[0]))
+                entrada = vector[:14739].reshape(1, -1)
+
                 modelo = modelos.get(ejercicio)
                 if modelo:
                     prediccion = modelo.predict(entrada, verbose=0)
@@ -95,23 +110,19 @@ def detect_pose(frame, ejercicio):
                     retroalimentacion = interpretar_resultado(
                         clase_predicha, ejercicio)
 
-                    if clase_predicha == 0 and ultima_clase != 0:
+                    # Reglas de conteo: de 'De pie' (0) a 'Ejercicio' (1)
+                    if ultima_clase == 0 and clase_predicha == 1:
                         repeticiones += 1
                     ultima_clase = clase_predicha
+                else:
+                    retroalimentacion = "Modelo no disponible"
 
     return frame
 
 
 def interpretar_resultado(clase, ejercicio):
-    if ejercicio == "flexion_codo":
-        return ["Buena postura", "Codo muy extendido", "Hombro desalineado"][clase] if clase < 3 else "Desconocido"
-    elif ejercicio == "flexiones":
-        return ["Flexión correcta", "Cuerpo desalineado", "Codos abiertos"][clase] if clase < 3 else "Desconocido"
-    elif ejercicio == "sentadilla":
-        return ["Postura correcta", "Corrige espalda", "Rodillas mal alineadas"][clase] if clase < 3 else "Desconocido"
-    elif ejercicio == "estiramiento":
-        return ["Estiramiento correcto", "Brazos mal extendidos", "Torso encorvado"][clase] if clase < 3 else "Desconocido"
-    return "Ejercicio desconocido"
+    etiquetas = ETIQUETAS_MODELOS.get(ejercicio, [])
+    return etiquetas[clase] if clase < len(etiquetas) else "Desconocido"
 
 
 def reiniciar_contador():
