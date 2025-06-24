@@ -3,21 +3,9 @@ import mediapipe as mp
 import numpy as np
 from tensorflow.keras.models import load_model
 
-# === Cargar modelos específicos ===
-modelos = {
-    "flexion_codo": load_model("modelo_flexion_codo.h5"),
-    # "flexiones": load_model("modelo_flexiones_lstm.h5"),
-    "sentadilla": load_model("modelo_sentadillas.h5"),
-    "estiramiento": load_model("modelo_estiramiento.h5"),
-}
-
-# === Diccionario de etiquetas por modelo ===
-ETIQUETAS_MODELOS = {
-    "flexion_codo": ["De pie", "Flexión de codo", "No se puede detectar bien", "Coloque al paciente dentro del área de captura"],
-    "flexiones": ["De pie", "Flexiones", "No se puede detectar bien", "Coloque al paciente dentro del área de captura"],
-    "sentadilla": ["De pie", "Sentadilla", "No se puede detectar bien", "Coloque al paciente dentro del área de captura"],
-    "estiramiento": ["De pie", "Estiramiento", "No se puede detectar bien", "Coloque al paciente dentro del área de captura"]
-}
+# === Cargar modelo LSTM general y clases ===
+modelo = load_model("modelo_lstm_ejercicios.h5")
+clases = open("clases.txt").read().splitlines()
 
 # === MediaPipe ===
 mp_pose = mp.solutions.pose
@@ -25,18 +13,28 @@ mp_drawing = mp.solutions.drawing_utils
 pose_detector = mp_pose.Pose(
     min_detection_confidence=0.5, min_tracking_confidence=0.5)
 
-# === Parámetros de entrada ===
-SEQUENCE_LENGTH = 205
-INPUT_DIM = 72
+# === Configuración ===
+SEQUENCE_LENGTH = 60
+INPUT_DIM = 144
+UMBRAL_CONF = 0.85
+
+# === Mensajes personalizados por clase incorrecta ===
+RETROALIMENTACION_POR_CLASE = {
+    "mala_postura": "⚠️ Corrige tu postura",
+    "sentadilla_incorrecta": "⚠️ Espalda recta y baja más",
+    "flexion_incorrecta": "⚠️ Cuida la alineación de brazos",
+    "flexion_codo_incorrecta": "⚠️ Brazos más cerca del torso",
+    "estiramiento_incorrecto": "⚠️ Mantén la postura recta"
+}
 
 # === Estado global ===
 secuencia_actual = []
 repeticiones = 0
-ultima_clase = None
+ultima_clase = ""
 retroalimentacion = ""
 
 
-# === Función para calcular ángulos básicos ===
+# === Funciones de procesamiento ===
 def calcular_angulos(landmarks):
     def get_angle(a, b, c):
         a = np.array([a.x, a.y])
@@ -55,7 +53,7 @@ def calcular_angulos(landmarks):
         get_angle(lmk[11], lmk[13], lmk[15]),  # brazo izquierdo
         get_angle(lmk[12], lmk[14], lmk[16]),  # brazo derecho
         get_angle(lmk[11], lmk[23], lmk[25]),  # torso izq
-        get_angle(lmk[12], lmk[24], lmk[26]),  # torso der
+        get_angle(lmk[12], lmk[24], lmk[26])   # torso der
     ]
 
 
@@ -67,7 +65,13 @@ def extract_landmark_data(results):
     return keypoints if keypoints else None
 
 
-def detect_pose(frame, ejercicio):
+def detectar_clase(entrada):
+    pred = modelo.predict(np.expand_dims(entrada, axis=0), verbose=0)[0]
+    idx = np.argmax(pred)
+    return clases[idx], pred[idx]
+
+
+def detect_pose(frame, ejercicio_esperado):
     global secuencia_actual, repeticiones, ultima_clase, retroalimentacion
 
     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -96,40 +100,28 @@ def detect_pose(frame, ejercicio):
 
             if len(secuencia_actual) < SEQUENCE_LENGTH:
                 retroalimentacion = f"Cargando... ({len(secuencia_actual)}/{SEQUENCE_LENGTH})"
+            else:
+                clase_predicha, confianza = detectar_clase(secuencia_actual)
+                if confianza > UMBRAL_CONF:
+                    if clase_predicha in RETROALIMENTACION_POR_CLASE:
+                        retroalimentacion = RETROALIMENTACION_POR_CLASE[clase_predicha]
+                    else:
+                        retroalimentacion = f"{clase_predicha} ({confianza:.2f})"
 
-            if len(secuencia_actual) == SEQUENCE_LENGTH:
-                vector = np.array(secuencia_actual).flatten()
-                if vector.shape[0] < 14739:
-                    vector = np.pad(vector, (0, 14739 - vector.shape[0]))
-                entrada = vector[:14739].reshape(1, -1)
-
-                modelo = modelos.get(ejercicio)
-                if modelo:
-                    prediccion = modelo.predict(entrada, verbose=0)
-                    clase_predicha = np.argmax(prediccion)
-                    retroalimentacion = interpretar_resultado(
-                        clase_predicha, ejercicio)
-
-                    # Reglas de conteo: de 'De pie' (0) a 'Ejercicio' (1)
-                    if ultima_clase == 0 and clase_predicha == 1:
+                    if clase_predicha == ejercicio_esperado and ultima_clase != clase_predicha:
                         repeticiones += 1
                     ultima_clase = clase_predicha
                 else:
-                    retroalimentacion = "Modelo no disponible"
+                    retroalimentacion = "Postura no reconocida"
 
     return frame
-
-
-def interpretar_resultado(clase, ejercicio):
-    etiquetas = ETIQUETAS_MODELOS.get(ejercicio, [])
-    return etiquetas[clase] if clase < len(etiquetas) else "Desconocido"
 
 
 def reiniciar_contador():
     global secuencia_actual, repeticiones, ultima_clase, retroalimentacion
     secuencia_actual = []
     repeticiones = 0
-    ultima_clase = None
+    ultima_clase = ""
     retroalimentacion = ""
 
 
