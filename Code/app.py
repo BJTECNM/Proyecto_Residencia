@@ -10,7 +10,7 @@ app = Flask(__name__)
 video_capture = None
 stream_active = False
 lock = threading.Lock()
-ejercicio_seleccionado = "flexion_codo"  # valor inicial
+ejercicio_seleccionado = "flexion_codo"  # Valor inicial
 
 
 @app.route('/')
@@ -31,11 +31,9 @@ def guardar_paciente():
         "edad": request.form['edad'],
         "complexion": request.form['complexion']
     }
-
     pacientes = cargar_pacientes()
     pacientes.append(datos)
     guardar_todos_pacientes(pacientes)
-
     return redirect(url_for('pantalla_captura', nombre=datos['nombre'], apellido=datos['apellido'], edad=datos['edad']))
 
 
@@ -156,9 +154,9 @@ def video():
             if not ret:
                 break
 
-            proccessed_frame = detect_pose(frame, ejercicio_seleccionado)
-            ret, buffer = cv2.imencode('.jpg', proccessed_frame, [
-                int(cv2.IMWRITE_JPEG_QUALITY), 85])
+            processed_frame = detect_pose(frame, ejercicio_seleccionado)
+            ret, buffer = cv2.imencode('.jpg', processed_frame, [
+                                       int(cv2.IMWRITE_JPEG_QUALITY), 85])
             if not ret:
                 continue
 
@@ -184,7 +182,7 @@ def feedback():
     return jsonify({"mensaje": obtener_feedback()})
 
 
-# === Funciones auxiliares ===
+# Funciones auxiliares para pacientes
 def cargar_pacientes():
     if os.path.exists('pacientes.json'):
         with open('pacientes.json', 'r', encoding='utf-8') as f:

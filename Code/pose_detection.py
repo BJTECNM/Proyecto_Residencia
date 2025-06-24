@@ -3,8 +3,8 @@ import mediapipe as mp
 import numpy as np
 from tensorflow.keras.models import load_model
 
-# === Cargar modelo LSTM general y clases ===
-modelo = load_model("modelo_lstm_ejercicios.h5")
+# === Cargar modelo LSTM multiclase y etiquetas ===
+modelo = load_model("modelo_ejercicios.h5")
 clases = open("clases.txt").read().splitlines()
 
 # === MediaPipe ===
@@ -27,14 +27,14 @@ RETROALIMENTACION_POR_CLASE = {
     "estiramiento_incorrecto": "⚠️ Mantén la postura recta"
 }
 
-# === Estado global ===
+# === Variables globales ===
 secuencia_actual = []
 repeticiones = 0
-ultima_clase = ""
+ultima_clase = None
 retroalimentacion = ""
 
 
-# === Funciones de procesamiento ===
+# --- Funciones auxiliares ---
 def calcular_angulos(landmarks):
     def get_angle(a, b, c):
         a = np.array([a.x, a.y])
@@ -71,6 +71,7 @@ def detectar_clase(entrada):
     return clases[idx], pred[idx]
 
 
+# --- Función principal para procesar cada frame ---
 def detect_pose(frame, ejercicio_esperado):
     global secuencia_actual, repeticiones, ultima_clase, retroalimentacion
 
@@ -90,10 +91,12 @@ def detect_pose(frame, ejercicio_esperado):
         angulos = calcular_angulos(results.pose_landmarks)
 
         if keypoints and len(angulos) == 6:
-            keypoints.extend(angulos)
-            keypoints = keypoints[:INPUT_DIM] + \
-                [0.0] * (INPUT_DIM - len(keypoints))
-            secuencia_actual.append(keypoints)
+            # Combinar keypoints + ángulos (ajusta si tu INPUT_DIM difiere)
+            caracteristicas = keypoints + angulos
+            caracteristicas = caracteristicas[:INPUT_DIM] + \
+                [0.0] * (INPUT_DIM - len(caracteristicas))
+
+            secuencia_actual.append(caracteristicas)
 
             if len(secuencia_actual) > SEQUENCE_LENGTH:
                 secuencia_actual.pop(0)
@@ -101,13 +104,15 @@ def detect_pose(frame, ejercicio_esperado):
             if len(secuencia_actual) < SEQUENCE_LENGTH:
                 retroalimentacion = f"Cargando... ({len(secuencia_actual)}/{SEQUENCE_LENGTH})"
             else:
-                clase_predicha, confianza = detectar_clase(secuencia_actual)
-                if confianza > UMBRAL_CONF:
-                    if clase_predicha in RETROALIMENTACION_POR_CLASE:
-                        retroalimentacion = RETROALIMENTACION_POR_CLASE[clase_predicha]
-                    else:
-                        retroalimentacion = f"{clase_predicha} ({confianza:.2f})"
+                entrada = np.array(secuencia_actual)
+                clase_predicha, confianza = detectar_clase(entrada)
 
+                if confianza > UMBRAL_CONF:
+                    # Retroalimentación personalizada si existe
+                    retroalimentacion = RETROALIMENTACION_POR_CLASE.get(
+                        clase_predicha, f"{clase_predicha} ({confianza:.2f})")
+
+                    # Contar sólo si la clase detectada es la esperada y cambia la clase anterior
                     if clase_predicha == ejercicio_esperado and ultima_clase != clase_predicha:
                         repeticiones += 1
                     ultima_clase = clase_predicha
@@ -117,11 +122,12 @@ def detect_pose(frame, ejercicio_esperado):
     return frame
 
 
+# --- Funciones para control externo ---
 def reiniciar_contador():
     global secuencia_actual, repeticiones, ultima_clase, retroalimentacion
     secuencia_actual = []
     repeticiones = 0
-    ultima_clase = ""
+    ultima_clase = None
     retroalimentacion = ""
 
 

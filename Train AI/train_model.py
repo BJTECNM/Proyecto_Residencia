@@ -1,69 +1,67 @@
-import os
 import numpy as np
-from sklearn.preprocessing import LabelEncoder
-from sklearn.model_selection import train_test_split
+import os
+import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense, Dropout
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
 from tensorflow.keras.utils import to_categorical
-from tensorflow.keras.callbacks import ModelCheckpoint
 
 # === CONFIGURACIÓN ===
-DATASET_DIR = "data/dataset"
-FRAMES = 60
-FEATURES = 144
-OUTPUT_MODEL = "data/modelo_ejercicios.h5"
+DATA_DIR = "data/dataset"
+SEQUENCE_LENGTH = 150
+INPUT_DIM = 144
 
-# === Cargar datos ===
-X = []
-y = []
+# === Carga de datos ===
+X, y = [], []
 
-for etiqueta in os.listdir(DATASET_DIR):
-    ruta_etiqueta = os.path.join(DATASET_DIR, etiqueta)
-    if not os.path.isdir(ruta_etiqueta):
+for clase in os.listdir(DATA_DIR):
+    clase_dir = os.path.join(DATA_DIR, clase)
+    if not os.path.isdir(clase_dir):
         continue
-    for archivo in os.listdir(ruta_etiqueta):
+    for archivo in os.listdir(clase_dir):
         if archivo.endswith(".npy"):
-            data = np.load(os.path.join(ruta_etiqueta, archivo))
-            if data.shape == (FRAMES, FEATURES):
-                X.append(data)
-                y.append(etiqueta)
+            ruta = os.path.join(clase_dir, archivo)
+            datos = np.load(ruta)
+            if datos.shape == (SEQUENCE_LENGTH, INPUT_DIM):
+                X.append(datos)
+                y.append(clase)
 
-X = np.array(X)  # (num_samples, 60, 144)
+X = np.array(X)
 y = np.array(y)
 
-print(f"Datos cargados: {X.shape}, Etiquetas: {y.shape}")
-
-# === Preprocesar etiquetas ===
+# === Codificar etiquetas ===
 le = LabelEncoder()
 y_encoded = le.fit_transform(y)
-y_categorical = to_categorical(y_encoded)
+y_cat = to_categorical(y_encoded)
 
-# Guardar clases
+# Guardar las etiquetas
 with open("clases.txt", "w") as f:
-    for clase in le.classes_:
-        f.write(clase + "\n")
+    for label in le.classes_:
+        f.write(label + "\n")
 
-# === Dividir datos ===
+# === División en entrenamiento y validación ===
 X_train, X_val, y_train, y_val = train_test_split(
-    X, y_categorical, test_size=0.2, random_state=42, stratify=y)
+    X, y_cat, test_size=0.2, random_state=42, stratify=y_cat)
 
-# === Definir modelo LSTM ===
+# === Modelo LSTM ===
 model = Sequential([
-    LSTM(128, return_sequences=True, input_shape=(FRAMES, FEATURES)),
-    Dropout(0.3),
+    LSTM(64, return_sequences=True, input_shape=(SEQUENCE_LENGTH, INPUT_DIM)),
+    Dropout(0.4),
     LSTM(64),
-    Dropout(0.3),
+    Dropout(0.4),
     Dense(64, activation='relu'),
-    Dense(len(le.classes_), activation='softmax')
+    Dense(y_cat.shape[1], activation='softmax')
 ])
 
 model.compile(optimizer='adam', loss='categorical_crossentropy',
               metrics=['accuracy'])
+model.summary()
 
-# === Entrenar modelo ===
-checkpoint = ModelCheckpoint(
-    OUTPUT_MODEL, monitor='val_accuracy', save_best_only=True, verbose=1)
-history = model.fit(X_train, y_train, validation_data=(
-    X_val, y_val), epochs=40, batch_size=16, callbacks=[checkpoint])
+# === Entrenamiento ===
+model.fit(X_train, y_train, epochs=80,
+          validation_data=(X_val, y_val), batch_size=16)
 
-print(f"✅ Modelo guardado como: {OUTPUT_MODEL}")
+# === Guardar modelo
+model.save("modelo_ejercicios.h5")
+print("✅ Modelo guardado como modelo_lstm_ejercicios.h5")
