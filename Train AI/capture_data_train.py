@@ -1,144 +1,153 @@
+import tkinter as tk
+from tkinter import ttk
 import cv2
 import os
 import numpy as np
 import mediapipe as mp
-import tkinter as tk
-from tkinter import ttk
-from threading import Thread
-import time
+from PIL import Image, ImageTk
 
-# === CONFIGURACIÓN ===
-SEQUENCE_LENGTH = 150
-INPUT_DIM = 144
-CLASES = [
-    "sentadilla", "flexion", "flexion_codo", "estiramiento",
-    "sentadilla_incorrecta", "flexion_incorrecta", "flexion_codo_incorrecta", "estiramiento_incorrecta"
-]
-DATA_DIR = "data/dataset"
+# === Configuración general ===
+FRAMES_POR_REPETICION = 150
+DATASET_DIR = "data/dataset"
 
-# === MediaPipe Pose ===
+# === Inicializa MediaPipe ===
 mp_pose = mp.solutions.pose
-pose = mp_pose.Pose()
+pose = mp_pose.Pose(static_image_mode=False)
 mp_drawing = mp.solutions.drawing_utils
 
 
-# === Ángulos útiles ===
+# === Función para calcular ángulos ===
 def calcular_angulos(landmarks):
-    def get_angle(a, b, c):
+    def angulo(a, b, c):
         a = np.array([a.x, a.y])
         b = np.array([b.x, b.y])
         c = np.array([c.x, c.y])
         ba = a - b
         bc = c - b
-        cos_angle = np.dot(ba, bc) / (np.linalg.norm(ba)
-                                      * np.linalg.norm(bc) + 1e-6)
-        return np.degrees(np.arccos(np.clip(cos_angle, -1.0, 1.0)))
+        cos_ang = np.dot(ba, bc) / (np.linalg.norm(ba)
+                                    * np.linalg.norm(bc) + 1e-6)
+        return np.degrees(np.arccos(np.clip(cos_ang, -1.0, 1.0)))
 
-    lmk = landmarks.landmark
-    return [
-        get_angle(lmk[23], lmk[25], lmk[27]),  # pierna izq
-        get_angle(lmk[24], lmk[26], lmk[28]),  # pierna der
-        get_angle(lmk[11], lmk[13], lmk[15]),  # brazo izq
-        get_angle(lmk[12], lmk[14], lmk[16]),  # brazo der
-        get_angle(lmk[11], lmk[23], lmk[25]),  # torso izq
-        get_angle(lmk[12], lmk[24], lmk[26])   # torso der
+    p = mp_pose.PoseLandmark
+    pares = [
+        (p.RIGHT_SHOULDER, p.RIGHT_ELBOW, p.RIGHT_WRIST),
+        (p.LEFT_SHOULDER, p.LEFT_ELBOW, p.LEFT_WRIST),
+        (p.RIGHT_HIP, p.RIGHT_KNEE, p.RIGHT_ANKLE),
+        (p.LEFT_HIP, p.LEFT_KNEE, p.LEFT_ANKLE),
+        (p.RIGHT_ELBOW, p.RIGHT_SHOULDER, p.RIGHT_HIP),
+        (p.LEFT_ELBOW, p.LEFT_SHOULDER, p.LEFT_HIP),
+        (p.RIGHT_SHOULDER, p.RIGHT_HIP, p.RIGHT_KNEE),
+        (p.LEFT_SHOULDER, p.LEFT_HIP, p.LEFT_KNEE),
+        (p.LEFT_HIP, p.NOSE, p.RIGHT_HIP),
+        (p.LEFT_SHOULDER, p.NOSE, p.RIGHT_SHOULDER),
+        (p.LEFT_KNEE, p.LEFT_HIP, p.RIGHT_HIP),
+        (p.RIGHT_KNEE, p.RIGHT_HIP, p.LEFT_HIP)
     ]
+    return [angulo(landmarks[a.value], landmarks[b.value], landmarks[c.value]) for a, b, c in pares]
 
 
-# === Interfaz ===
+# === Clase principal GUI ===
 class CapturaGUI:
-    def __init__(self):
-        self.root = tk.Tk()
-        self.root.title("Captura de Ejercicios (150 frames)")
-        self.ejercicio = tk.StringVar(value=CLASES[0])
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Captura de repeticiones para entrenamiento")
+
+        self.etiquetas = [
+            "sentadilla", "flexion", "flexion_codo", "estiramiento",
+            "sentadilla_incorrecta", "flexion_incorrecta", "flexion_codo_incorrecta",
+            "estiramiento_incorrecto", "mala_postura"
+        ]
+        self.etiqueta_actual = tk.StringVar(value=self.etiquetas[0])
         self.capturando = False
-        self.repeticiones = 0
+        self.secuencia = []
+        self.repeticion = 0
 
-        ttk.Label(self.root, text="Selecciona clase:").pack(pady=5)
-        self.selector = ttk.Combobox(
-            self.root, values=CLASES, textvariable=self.ejercicio)
-        self.selector.pack(pady=5)
+        self.cap = cv2.VideoCapture(0)
 
-        self.start_btn = ttk.Button(
-            self.root, text="Iniciar captura", command=self.iniciar)
-        self.start_btn.pack(pady=5)
+        self.crear_interfaz()
+        self.mostrar_frame()
 
-        self.stop_btn = ttk.Button(
-            self.root, text="Detener", command=self.detener, state="disabled")
-        self.stop_btn.pack(pady=5)
+    def crear_interfaz(self):
+        self.selector = ttk.Combobox(self.root, values=self.etiquetas,
+                                     textvariable=self.etiqueta_actual, state="readonly", width=20)
+        self.selector.grid(row=0, column=0, padx=10, pady=10)
 
-        self.status_lbl = ttk.Label(self.root, text="Estado: Esperando...")
-        self.status_lbl.pack(pady=10)
+        self.btn_iniciar = tk.Button(self.root, text="Iniciar Captura",
+                                     command=self.iniciar_captura, bg="#4CAF50", fg="white", width=20)
+        self.btn_iniciar.grid(row=0, column=1, padx=10)
 
-        self.root.protocol("WM_DELETE_WINDOW", self.salir)
+        self.btn_detener = tk.Button(self.root, text="Detener Captura",
+                                     command=self.detener_captura, bg="#f44336", fg="white", width=20)
+        self.btn_detener.grid(row=0, column=2, padx=10)
 
-        self.thread = None
-        self.root.mainloop()
+        self.video_label = tk.Label(self.root)
+        self.video_label.grid(row=1, column=0, columnspan=3)
 
-    def iniciar(self):
-        self.capturando = True
-        self.start_btn.config(state="disabled")
-        self.stop_btn.config(state="normal")
-        self.status_lbl.config(text="Capturando...")
-        self.thread = Thread(target=self.capturar)
-        self.thread.start()
+        self.status = tk.Label(
+            self.root, text="Esperando inicio...", fg="blue")
+        self.status.grid(row=2, column=0, columnspan=3, pady=5)
 
-    def detener(self):
-        self.capturando = False
-        self.start_btn.config(state="normal")
-        self.stop_btn.config(state="disabled")
-        self.status_lbl.config(text="Estado: Detenido")
-
-    def salir(self):
-        self.capturando = False
-        self.root.destroy()
-
-    def capturar(self):
-        cap = cv2.VideoCapture(0)
-        secuencia = []
-        while self.capturando:
-            ret, frame = cap.read()
-            if not ret:
-                break
-            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            results = pose.process(rgb)
+    def mostrar_frame(self):
+        ret, frame = self.cap.read()
+        if ret:
+            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            results = pose.process(frame_rgb)
 
             if results.pose_landmarks:
-                puntos = results.pose_landmarks.landmark
-                keypoints = []
-                for lm in puntos[:33]:
-                    keypoints.extend([lm.x, lm.y])
-                angulos = calcular_angulos(results.pose_landmarks)
-                if len(keypoints) == 66 and len(angulos) == 6:
-                    caracteristicas = keypoints + angulos
-                    caracteristicas += [0.0] * \
-                        (INPUT_DIM - len(caracteristicas))
-                    secuencia.append(caracteristicas)
-
                 mp_drawing.draw_landmarks(
                     frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
 
-            cv2.putText(frame, f"Frames: {len(secuencia)}/{SEQUENCE_LENGTH}", (10, 30),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
-            cv2.imshow("Captura", frame)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
+                if self.capturando:
+                    landmarks = results.pose_landmarks.landmark
+                    caracteristicas = []
+                    for lm in landmarks:
+                        caracteristicas.extend(
+                            [lm.x, lm.y, lm.z, lm.visibility])
+                    caracteristicas.extend(calcular_angulos(landmarks))
 
-            if len(secuencia) == SEQUENCE_LENGTH:
-                etiqueta = self.ejercicio.get()
-                carpeta = os.path.join(DATA_DIR, etiqueta)
-                os.makedirs(carpeta, exist_ok=True)
-                nombre_archivo = f"rep_{self.repeticiones+1:03d}.npy"
-                ruta = os.path.join(carpeta, nombre_archivo)
-                np.save(ruta, np.array(secuencia))
-                self.repeticiones += 1
-                self.status_lbl.config(
-                    text=f"Repetición {self.repeticiones} guardada.")
-                secuencia = []
+                    if len(caracteristicas) == 144:
+                        self.secuencia.append(caracteristicas)
 
-        cap.release()
-        cv2.destroyAllWindows()
+                    if len(self.secuencia) >= FRAMES_POR_REPETICION:
+                        self.guardar_repeticion()
+                        self.capturando = False
+                        self.status.config(
+                            text="✅ Repetición guardada", fg="green")
+
+            img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+            imgtk = ImageTk.PhotoImage(image=img)
+            self.video_label.imgtk = imgtk
+            self.video_label.configure(image=imgtk)
+
+        self.root.after(10, self.mostrar_frame)
+
+    def iniciar_captura(self):
+        self.secuencia = []
+        self.capturando = True
+        self.status.config(
+            text=f"Grabando {self.etiqueta_actual.get()}...", fg="red")
+
+    def detener_captura(self):
+        self.capturando = False
+        self.secuencia = []
+        self.status.config(text="⏹️ Captura detenida", fg="orange")
+
+    def guardar_repeticion(self):
+        etiqueta = self.etiqueta_actual.get()
+        ruta = os.path.join(DATASET_DIR, etiqueta)
+        os.makedirs(ruta, exist_ok=True)
+        archivo = os.path.join(ruta, f"rep_{len(os.listdir(ruta))+1:03d}.npy")
+        np.save(archivo, np.array(self.secuencia))
+        print(f"Guardado: {archivo}")
+
+    def cerrar(self):
+        self.cap.release()
+        self.root.destroy()
 
 
+# === Ejecutar aplicación ===
 if __name__ == "__main__":
-    CapturaGUI()
+    root = tk.Tk()
+    app = CapturaGUI(root)
+    root.protocol("WM_DELETE_WINDOW", app.cerrar)
+    root.mainloop()
