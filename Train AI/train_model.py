@@ -9,8 +9,8 @@ from tensorflow.keras.utils import to_categorical
 
 # === CONFIGURACIÓN ===
 DATA_DIR = "data/dataset"
-SEQUENCE_LENGTH = 150
-INPUT_DIM = 144
+SEQUENCE_LENGTH = 60   # menor para predicción más rápida
+INPUT_DIM = 99        # ajustable dependiendo del preprocesamiento
 
 # === Carga de datos ===
 X, y = [], []
@@ -23,9 +23,19 @@ for clase in os.listdir(DATA_DIR):
         if archivo.endswith(".npy"):
             ruta = os.path.join(clase_dir, archivo)
             datos = np.load(ruta)
+
+            # Verificar que el shape coincida con lo esperado
             if datos.shape == (SEQUENCE_LENGTH, INPUT_DIM):
                 X.append(datos)
                 y.append(clase)
+            else:
+                print(
+                    f"⚠️ Archivo ignorado por tamaño incorrecto: {archivo}, shape: {datos.shape}")
+
+# === Validación de carga ===
+if len(X) == 0:
+    raise ValueError(
+        "❌ No se cargaron datos. Verifica que los archivos tengan shape correcto (60, 144).")
 
 X = np.array(X)
 y = np.array(y)
@@ -39,6 +49,8 @@ y_cat = to_categorical(y_encoded)
 with open("clases.txt", "w") as f:
     for label in le.classes_:
         f.write(label + "\n")
+
+print(f"✅ Etiquetas guardadas en clases.txt: {list(le.classes_)}")
 
 # === División en entrenamiento y validación ===
 X_train, X_val, y_train, y_val = train_test_split(
@@ -64,4 +76,4 @@ model.fit(X_train, y_train, epochs=80,
 
 # === Guardar modelo
 model.save("modelo_ejercicios.h5")
-print("✅ Modelo guardado como modelo_lstm_ejercicios.h5")
+print("✅ Modelo guardado como modelo_ejercicios.h5")
