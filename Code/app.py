@@ -3,6 +3,7 @@ import os
 import json
 import cv2
 import threading
+import time
 from pose_detection import detect_pose, reiniciar_contador, obtener_repeticiones, obtener_feedback
 
 app = Flask(__name__)
@@ -143,6 +144,7 @@ def stop_stream():
 def video():
     def generate_frames():
         global video_capture
+        last_time = time.time()
 
         while True:
             with lock:
@@ -156,12 +158,20 @@ def video():
 
             processed_frame = detect_pose(frame, ejercicio_seleccionado)
             ret, buffer = cv2.imencode('.jpg', processed_frame, [
-                                       int(cv2.IMWRITE_JPEG_QUALITY), 85])
+                int(cv2.IMWRITE_JPEG_QUALITY), 85])
+
             if not ret:
                 continue
 
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
+            yield (b'--frame\r\n'b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
+
+            # Calcula tiempo transcurrido y ajusta para mantener 30 fps
+            current_time = time.time()
+            elapsed = current_time - last_time
+            last_time = current_time
+
+            # 30 fps (1 / 25) para 25 fps
+            time.sleep(max(0, (1 / 30) - elapsed))
 
     return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
 

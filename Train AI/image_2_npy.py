@@ -5,8 +5,8 @@ import mediapipe as mp
 from math import acos, degrees
 
 # === Configuración ===
-INPUT_DIR = "data/dataset/sentadilla_01"
-OUTPUT_FILE = "data/dataset/sentadilla/rep_01.npy"
+INPUT_DIR = "data/dataset/mala_postura_02"
+OUTPUT_FILE = "data/dataset/mala_postura/rep_02.npy"
 SEQUENCE_LENGTH = 60
 POINTS = 33
 VALORES_POR_FRAME = 99  # x, y, visibilidad

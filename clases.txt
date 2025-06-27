@@ -1,3 +1,6 @@
+de_pie
+estiramiento
+flexion
+flexion_codo
 mala_postura
 sentadilla
-sentadilla_incorrecta

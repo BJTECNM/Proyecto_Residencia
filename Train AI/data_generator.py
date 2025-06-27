@@ -6,10 +6,11 @@ from tensorflow.keras.utils import Sequence, to_categorical
 from sklearn.preprocessing import LabelEncoder
 
 
-# === Aumentos ===
+# === Aumentos sobre coordenadas ===
 def rotar_frame(frame, grados):
     ang = np.radians(grados)
-    cos_a, sin_a = np.cos(ang), np.sin(ang)
+    cos_a = np.cos(ang)
+    sin_a = np.sin(ang)
     resultado = []
     for i in range(33):
         x = frame[i * 3]
@@ -18,6 +19,7 @@ def rotar_frame(frame, grados):
         x_rot = x * cos_a - y * sin_a
         y_rot = x * sin_a + y * cos_a
         resultado.extend([x_rot, y_rot, v])
+    resultado.extend(frame[99:])
     return np.array(resultado)
 
 
@@ -28,12 +30,14 @@ def flip_frame(frame):
         y = frame[i * 3 + 1]
         v = frame[i * 3 + 2]
         resultado.extend([x, y, v])
+    resultado.extend(frame[99:])
     return np.array(resultado)
 
 
 def ruido_frame(frame, intensidad=0.01):
-    ruido = np.random.normal(0, intensidad, size=frame.shape)
-    return frame + ruido
+    parte_1 = frame[:99] + np.random.normal(0, intensidad, size=99)
+    parte_2 = frame[99:]  # ángulos sin ruido
+    return np.concatenate([parte_1, parte_2])
 
 
 def escalar_frame(frame, factor=1.05):
@@ -43,6 +47,7 @@ def escalar_frame(frame, factor=1.05):
         y = frame[i * 3 + 1] * factor
         v = frame[i * 3 + 2]
         resultado.extend([x, y, v])
+    resultado.extend(frame[99:])
     return np.array(resultado)
 
 
@@ -58,7 +63,7 @@ def aplicar_aumentos(secuencia):
         if random.random() < 0.2:
             frame = escalar_frame(frame, random.uniform(0.95, 1.05))
         nueva.append(frame)
-    return np.array(nueva)
+    return np.array(nueva, dtype=np.float32)
 
 
 # === Generador ===
@@ -82,8 +87,14 @@ class PoseSequenceGenerator(Sequence):
                 continue
             for archivo in os.listdir(clase_dir):
                 if archivo.endswith(".npy"):
-                    self.archivos.append(os.path.join(clase_dir, archivo))
-                    self.labels.append(clase)
+                    ruta = os.path.join(clase_dir, archivo)
+                    secuencia = np.load(ruta)
+                    if secuencia.shape[1] == 105:
+                        self.archivos.append(ruta)
+                        self.labels.append(clase)
+                    else:
+                        print(
+                            f"❌ Ignorado por shape incorrecto: {ruta} ({secuencia.shape})")
 
     def __len__(self):
         return len(self.archivos) // self.batch_size
@@ -102,7 +113,7 @@ class PoseSequenceGenerator(Sequence):
             X.append(secuencia)
             y.append(label)
 
-        X = np.array(X)
+        X = np.array(X, dtype=np.float32)
         y = self.label_encoder.transform(y)
         y = to_categorical(y, num_classes=self.n_classes)
         return X, y
