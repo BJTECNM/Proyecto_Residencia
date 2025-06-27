@@ -15,7 +15,7 @@ pose_detector = mp_pose.Pose(
 
 # === Configuración ===
 SEQUENCE_LENGTH = 60
-INPUT_DIM = 144
+INPUT_DIM = 105
 UMBRAL_CONF = 0.85
 
 # === Mensajes personalizados por clase incorrecta ===
