@@ -47,5 +47,5 @@ model.fit(
 )
 
 # === Guardado del modelo en formato moderno
-model.save("modelo_ejercicios.keras")
-print("✅ Modelo guardado como modelo_ejercicios.keras")
+model.save("modelo2_ejercicios.keras")
+print("✅ Modelo guardado como modelo2_ejercicios.keras")

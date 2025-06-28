@@ -1,6 +1,6 @@
 import os
 
-carpeta = "data/dataset/sentadilla_06"
+carpeta = "data/preparar/estiramiento_07"
 archivos = sorted(os.listdir(carpeta))
 for i, nombre in enumerate(archivos[:60], start=1):
     origen = os.path.join(carpeta, nombre)
