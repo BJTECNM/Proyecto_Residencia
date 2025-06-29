@@ -7,7 +7,7 @@ from tensorflow.keras.models import load_model
 
 # === Cargar modelo LSTM multiclase y etiquetas ===
 modelo = load_model("data/modelo_ejercicios.keras")
-clases = open("clases.txt").read().splitlines()
+clases = open("data/clases.txt").read().splitlines()
 
 # === MediaPipe ===
 mp_pose = mp.solutions.pose
