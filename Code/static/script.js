@@ -134,26 +134,6 @@ window.addEventListener('load', async () => {
         });
 });
 
-function mostrarBarraEspera() {
-    const barra = document.getElementById("barra-espera");
-    const progresoBarra = document.getElementById("progreso-espera");
-
-    progreso = 0;
-    esperando = true;
-    barra.style.display = "block";
-
-    barraInterval = setInterval(() => {
-        progreso += 2.5; // 100 / (4s * 10 actualizaciones por segundo)
-        if (progreso >= 100) {
-            progreso = 100;
-            clearInterval(barraInterval);
-            esperando = false;
-            barra.style.display = "none";
-        }
-        progresoBarra.style.width = progreso + "%";
-    }, 100);
-}
-
 // Actualiza contador de repeticiones y feedback cada segundo
 setInterval(() => {
     if (isStreaming) {
@@ -167,11 +147,6 @@ setInterval(() => {
             .then(res => res.json())
             .then(data => {
                 document.getElementById('feedback').textContent = data.mensaje;
-
-                // Mostrar barra de espera si aplica
-                if (data.esperando && !esperando) {
-                    mostrarBarraEspera();
-                }
             });
     }
 }, 1000);

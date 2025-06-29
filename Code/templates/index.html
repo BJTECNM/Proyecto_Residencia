@@ -8,24 +8,13 @@
     <aside class="sidebar-left">
         <label for="cameraSelect">Seleccionar cámara:</label>
         <select id="cameraSelect"></select>
-
         <button id="startBtn" onclick="startStream()" {% if stream_active %}disabled{% endif %}>
             Iniciar
         </button>
-
         <button id="stopBtn" onclick="stopStream()" disabled>
             Detener
         </button>
-
         <button onclick="salirCaptura()">Salir</button>
-
-        <div id="barra-espera" style="display: none; width: 100%; margin-top: 1rem;">
-            <label style="font-size: 0.9rem;">Preparándote para la siguiente repetición...</label>
-            <div style="background: #ccc; height: 8px; border-radius: 4px; overflow: hidden;">
-                <div id="progreso-espera" style="background: #4caf50; width: 0%; height: 100%; transition: width 0.1s;">
-                </div>
-            </div>
-        </div>
     </aside>
 
     <!-- Columna central: video + nombre del paciente -->

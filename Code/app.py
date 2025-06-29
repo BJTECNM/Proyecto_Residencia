@@ -171,7 +171,7 @@ def video():
             last_time = current_time
 
             # 30 fps (1 / 25) para 25 fps
-            time.sleep(max(0, (1 / 30) - elapsed))
+            time.sleep(max(0, (1 / 25) - elapsed))
 
     return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
@@ -189,19 +189,22 @@ def contador():
 
 @app.route('/feedback')
 def feedback():
-    return jsonify({"mensaje": obtener_feedback()})
+    return jsonify(obtener_feedback())
 
 
 # Funciones auxiliares para pacientes
 def cargar_pacientes():
-    if os.path.exists('pacientes.json'):
-        with open('pacientes.json', 'r', encoding='utf-8') as f:
+    path = os.path.join('data', 'pacientes.json')
+    if os.path.exists(path):
+        with open(path, 'r', encoding='utf-8') as f:
             return json.load(f)
     return []
 
 
 def guardar_todos_pacientes(pacientes):
-    with open('pacientes.json', 'w', encoding='utf-8') as f:
+    os.makedirs('data', exist_ok=True)
+    path = os.path.join('data', 'pacientes.json')
+    with open(path, 'w', encoding='utf-8') as f:
         json.dump(pacientes, f, ensure_ascii=False, indent=4)
 
 
